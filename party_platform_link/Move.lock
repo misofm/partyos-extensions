@@ -55,7 +55,7 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.testnet.party_platform_link]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "9D2DD4A6AE8423170378F048A969685CADBBFA333CC6F12335137A9EBD0DAE0F"
+manifest_digest = "9319A22DF54ADADCC10D0C94F8DBAB163F6B3BF92206405D2063662A5E384E24"
 deps = { party_social = "party_social", partyos = "partyos", platform_link = "platform_link", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.party_social]
@@ -65,7 +65,7 @@ manifest_digest = "F73102659DC343F1BB8645F9E8E00503A4F9ED6A024C297E99ADD9135188E
 deps = { platform_link = "platform_link", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.partyos]
-source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "62915722b685f4744e6884c3c5fda0fb4d1f60ec" }
+source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "3626ee19e42cf8df5ecea59cd5be6cb5a1538cc1" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }

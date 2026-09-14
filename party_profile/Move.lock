@@ -67,11 +67,11 @@ deps = { std = "MoveStdlib", sui = "Sui" }
 [pinned.testnet.party_profile]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "9F1956D1FF5B0273588BBCC356265B680D8200709AE8A7FAB3F381B2B19282EE"
+manifest_digest = "5A00FA297097B92ADAB3FA071FA7E9D673D4DEECE7B3ED97E68AD9C5998F7BC4"
 deps = { country_code = "country_code", language_code = "language_code", partyos = "partyos", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.partyos]
-source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "62915722b685f4744e6884c3c5fda0fb4d1f60ec" }
+source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "3626ee19e42cf8df5ecea59cd5be6cb5a1538cc1" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }
