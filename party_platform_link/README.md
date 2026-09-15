@@ -11,10 +11,12 @@ new type there, never a change here — and adding one never rewrites another's.
 Storage mechanics come entirely from `platform_link`; this module adds only
 the party-specific cap gate and views. Writes are gated by the
 `PartyAdminCap` through `party::uid_mut(cap)`; views are permissionless. The
-primitive emits the authoritative rich event for each successful set or
-present clear, including the parent address, defining-ID-qualified `Data` type,
-existence transition, and bounded BCS summaries. The legacy wrapper event types
-remain public for compatibility but are inert and never emitted.
+primitive emits the authoritative rich event for each insertion, changed
+replacement, or present clear, including the parent address,
+defining-ID-qualified `Data` type, existence transition, and bounded BCS
+summaries. Equal replacements still perform the underlying write but emit no
+event. The legacy wrapper event types remain public for compatibility but are
+inert and never emitted.
 
 ## What it stores
 
@@ -42,7 +44,7 @@ with `EUnauthorized` at `partyos::party`.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_link<Data>(party, cap, PlatformLink<Data>)` | Store the link, replacing any existing one for that platform; delegates to `platform_link::set`, which emits one `PlatformLinkSetEvent<Data>` | wrong cap |
+| `set_link<Data>(party, cap, PlatformLink<Data>)` | Store the link, replacing any existing one for that platform; delegates to `platform_link::set`, which emits on insertion or changed replacement | wrong cap |
 | `clear_link<Data>(party, cap)` | Remove the platform's link; delegates to `platform_link::clear`, which emits `PlatformLinkRemovedEvent<Data>` only when one was stored, and is silent otherwise | wrong cap — the cap is verified before the existence check, so a wrong cap aborts even when nothing is stored |
 
 ### Views
@@ -56,7 +58,7 @@ with `EUnauthorized` at `partyos::party`.
 
 | Event | When | Payload |
 |---|---|---|
-| `PlatformLinkSetEvent<phantom Data>` | Every successful `set_link`, including equal replacement; emitted by `platform_link` | `parent_id`, raw defining-ID-qualified `data_type`, existence transition, previous/new `Data` BCS lengths and Blake2b-256 hashes |
+| `PlatformLinkSetEvent<phantom Data>` | Successful insertion or changed replacement; emitted by `platform_link` | `parent_id`, raw defining-ID-qualified `data_type`, existence transition, previous/new `Data` BCS lengths and Blake2b-256 hashes |
 | `PlatformLinkRemovedEvent<phantom Data>` | Every successful present `clear_link`; emitted by `platform_link` | `parent_id`, raw defining-ID-qualified `data_type`, `true`/`false` existence transition, removed `Data` BCS length and Blake2b-256 hash |
 | `LinkSetEvent<phantom Data>` | Legacy compatibility declaration | none — inert; never emitted |
 | `LinkClearedEvent<phantom Data>` | Legacy compatibility declaration | none — inert; never emitted |
@@ -80,7 +82,7 @@ payload packages, before `set_link` is ever called.
 ## Dependencies
 
 - [`partyos`](https://github.com/misofm/partyos) at exact revision
-  `841a875a4989082a0ebeb1beb464b71f9ea2bd73` — `Party` authorization. This
+  `c23df9018e15a76395c65bc8dfca4b365140aa12` — `Party` authorization. This
   is the manifest's only Git pin.
 - [`platform_link`](../lib/platform_link) — a local-path sibling package
   (`platform_link = { local = "../lib/platform_link" }`) — all storage

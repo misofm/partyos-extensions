@@ -17,16 +17,16 @@ Profile dynamic field: required short bio (1–300 bytes), optional long bio
 validated language codes. Optional long-bio validation uses `Option::do_ref!`
 with direct named numeric error constants; no caller-selected abort code remains.
 Set and clear require the matching `PartyAdminCap`; views are permissionless.
-Set events carry address-based party/cap ids plus complete previous/current
-profile snapshots as raw UTF-8 bytes; clear events carry the complete removed
-snapshot and absent clears are silent. Initial previous values use empty/none
-sentinels, and an identical replacement still emits one event.
+Changed set events carry address-based party/cap ids plus complete
+previous/current profile snapshots as raw UTF-8 bytes; equal replacements still
+write but are silent. Clear events carry the complete removed snapshot and
+absent clears are silent. Initial previous values use empty/none sentinels.
 
 ## Exact manifest pins
 
 | Dependency | Repository | Revision |
 |---|---|---|
-| `partyos` | `https://github.com/misofm/partyos.git` | `841a875a4989082a0ebeb1beb464b71f9ea2bd73` |
+| `partyos` | `https://github.com/misofm/partyos.git` | `c23df9018e15a76395c65bc8dfca4b365140aa12` |
 | `country_code` | `https://github.com/unconfirmedlabs/country_code.git` | `b4c92cb7f772879335344d7b6499b5fa4eafef56` |
 | `language_code` | `https://github.com/unconfirmedlabs/language_code.git` | `61542357f3d2ff989d120185046def7cf6c8bdcb` |
 
@@ -34,10 +34,10 @@ The manifest has no local-path or floating dependencies.
 
 ## Verification
 
-- Package tests: **21/21**, including the retained validation and shared-party
-  coverage plus complete initial/replacement/clear snapshots, identical writes,
-  absent-clear silence, multibyte/order preservation, maximum BCS sizes, view
-  silence, validation precedence, and wrong-cap set/clear paths.
+- Package tests: **23/23**, including the retained validation and shared-party
+  coverage plus complete initial/replacement/clear snapshots, equal-write
+  silence, absent-clear silence, multibyte/order preservation, maximum BCS
+  sizes, view silence, validation precedence, and wrong-cap set/clear paths.
 - Production instruction coverage: **100.00%**.
 - End-to-end scenario covers Party share, cap transfer, later profile write,
   and permissionless read from the shared Party.

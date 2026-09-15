@@ -13,25 +13,26 @@ Release-ready. No security or correctness findings remain.
 
 `party_media` is a state-attaching extension. It stores one nonzero Walrus
 quilt ID (`u256`) as a Party dynamic field. Set/replace and clear require the
-matching `PartyAdminCap`; reads are permissionless. Rich set events carry the
-party/cap addresses, existence bit, and prior/resulting quilt ids (129-byte
-payload), while clear events carry the party/cap addresses and removed quilt
-id (96-byte payload). Patch roles are an off-chain convention, and no media
-bytes or funds are stored.
+matching `PartyAdminCap`; reads are permissionless. Rich set events are emitted
+for inserts and changed replacements and carry the party/cap addresses,
+existence bit, and prior/resulting quilt ids (129-byte payload), while clear
+events carry the party/cap addresses and removed quilt id (96-byte payload).
+Equal replacements still write silently. Patch roles are an off-chain
+convention, and no media bytes or funds are stored.
 
 ## Exact manifest pins
 
 | Dependency | Repository | Revision |
 |---|---|---|
-| `partyos` | `https://github.com/misofm/partyos.git` | `841a875a4989082a0ebeb1beb464b71f9ea2bd73` |
+| `partyos` | `https://github.com/misofm/partyos.git` | `c23df9018e15a76395c65bc8dfca4b365140aa12` |
 
 The manifest has no local-path or floating dependencies.
 
 ## Verification
 
-- Package tests: **9/9**, including **6** expected-failure paths covering zero
-  validation precedence, wrong-cap set on absent/present state, and
-  wrong-cap clear on absent/present state.
+- Package tests: **11/11**, including **7** expected-failure paths covering zero
+  validation precedence, equal-write silence, wrong-cap set on
+  absent/present/equal state, and wrong-cap clear on absent/present state.
 - Strict Testnet and Mainnet lint builds passed with warnings as errors.
 - Production instruction coverage: **100.00%** on both Testnet and Mainnet.
 - End-to-end scenario covers Party share, cap transfer, later cap-gated media

@@ -128,7 +128,8 @@ public fun exists_<Data: copy + drop + store>(uid: &UID): bool {
 
 /// Sets the `PlatformLink<Data>` under `uid`, replacing any existing one.
 /// Emits `PlatformLinkSetEvent<Data>` with bounded summaries of the previous
-/// and new payloads. An equal replacement still emits an event.
+/// and new payloads only when the complete `Data` value changes. Equal
+/// replacements still write the new value but do not emit.
 public fun set<Data: copy + drop + store>(uid: &mut UID, link: PlatformLink<Data>) {
     if (df::exists(uid, PlatformLinkKey<Data>())) {
         let (previous_bcs_length, previous_bcs_hash) =
@@ -137,17 +138,21 @@ public fun set<Data: copy + drop + store>(uid: &mut UID, link: PlatformLink<Data
                 PlatformLinkKey<Data>(),
             ).data);
         let (data_bcs_length, data_bcs_hash) = summarize(&link.data);
+        let previous: &PlatformLink<Data> = df::borrow(uid, PlatformLinkKey<Data>());
+        let value_changed = previous.data != link.data;
         *df::borrow_mut(uid, PlatformLinkKey<Data>()) = link;
-        emit(PlatformLinkSetEvent<Data> {
-            parent_id: uid.to_address(),
-            data_type: data_type<Data>(),
-            existed_before: true,
-            exists_after: true,
-            previous_bcs_length,
-            previous_bcs_hash,
-            data_bcs_length,
-            data_bcs_hash,
-        });
+        if (value_changed) {
+            emit(PlatformLinkSetEvent<Data> {
+                parent_id: uid.to_address(),
+                data_type: data_type<Data>(),
+                existed_before: true,
+                exists_after: true,
+                previous_bcs_length,
+                previous_bcs_hash,
+                data_bcs_length,
+                data_bcs_hash,
+            });
+        };
     } else {
         let (data_bcs_length, data_bcs_hash) = summarize(&link.data);
         df::add(uid, PlatformLinkKey<Data>(), link);

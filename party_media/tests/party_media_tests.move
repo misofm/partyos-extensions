@@ -58,20 +58,17 @@ fun set_sequence_replace_equal_max_clear_reinsert() {
     assert_eq!(quilt, 2u256);
     assert_eq!(media::quilt(&p).destroy_some(), 2u256);
 
-    // Equal replacement is still a write and emits one complete event.
+    // Equal replacement is still a write but emits no redundant event.
     media::set_media(&mut p, &cap, 2u256);
     let set_events = event::events_by_type<media::MediaSetEvent>();
-    assert_eq!(set_events.length(), 3);
-    let (_, _, existed_before, previous_quilt, quilt) = media::set_event_fields(&set_events[2]);
-    assert!(existed_before);
-    assert_eq!(previous_quilt, 2u256);
-    assert_eq!(quilt, 2u256);
+    assert_eq!(set_events.length(), 2);
+    assert_eq!(media::quilt(&p).destroy_some(), 2u256);
 
     // The full u256 range is accepted; the value is not interpreted here.
     media::set_media(&mut p, &cap, MAX_QUILT);
     let set_events = event::events_by_type<media::MediaSetEvent>();
-    assert_eq!(set_events.length(), 4);
-    let (_, _, existed_before, previous_quilt, quilt) = media::set_event_fields(&set_events[3]);
+    assert_eq!(set_events.length(), 3);
+    let (_, _, existed_before, previous_quilt, quilt) = media::set_event_fields(&set_events[2]);
     assert!(existed_before);
     assert_eq!(previous_quilt, 2u256);
     assert_eq!(quilt, MAX_QUILT);
@@ -95,12 +92,24 @@ fun set_sequence_replace_equal_max_clear_reinsert() {
     assert_eq!(event::events_by_type<media::MediaClearedEvent>().length(), 1);
     media::set_media(&mut p, &cap, 3u256);
     let set_events = event::events_by_type<media::MediaSetEvent>();
-    assert_eq!(set_events.length(), 5);
-    let (_, _, existed_before, previous_quilt, quilt) = media::set_event_fields(&set_events[4]);
+    assert_eq!(set_events.length(), 4);
+    let (_, _, existed_before, previous_quilt, quilt) = media::set_event_fields(&set_events[3]);
     assert!(!existed_before);
     assert_eq!(previous_quilt, 0u256);
     assert_eq!(quilt, 3u256);
 
+    destroy(p);
+    destroy(cap);
+}
+
+#[test]
+fun equal_media_write_preserves_state_without_event() {
+    let ctx = &mut tx_context::dummy();
+    let (mut p, cap) = new_party(ctx);
+    media::set_media(&mut p, &cap, 99u256);
+    media::set_media(&mut p, &cap, 99u256);
+    assert_eq!(event::events_by_type<media::MediaSetEvent>().length(), 1);
+    assert_eq!(media::quilt(&p).destroy_some(), 99u256);
     destroy(p);
     destroy(cap);
 }
@@ -203,6 +212,18 @@ fun set_media_with_wrong_cap_aborts_when_existing() {
     let (_other, other_cap) = new_party(ctx);
     media::set_media(&mut p, &cap, 1u256);
     media::set_media(&mut p, &other_cap, 2u256);
+    abort
+}
+
+#[test, expected_failure(abort_code = EUnauthorized, location = partyos::party)]
+fun set_media_equal_with_wrong_cap_aborts() {
+    let ctx = &mut tx_context::dummy();
+    let (mut p, cap) = new_party(ctx);
+    let (_other, other_cap) = new_party(ctx);
+    media::set_media(&mut p, &cap, 1u256);
+
+    // Equality must not bypass the existing PartyAdminCap authorization.
+    media::set_media(&mut p, &other_cap, 1u256);
     abort
 }
 

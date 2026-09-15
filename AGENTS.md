@@ -53,10 +53,13 @@ and [README.md](README.md) for the architecture and package overview.
    40-character commit SHA—never `main` or `master`—and committed manifests
    contain no local-path dependencies. Packages publish immutably; changed data
    models require a new package and explicit migration, not an upgrade.
-8. **Emit an event per write**, carrying `party_id`. Events are change
-   signals: payloads are not re-included, except small, stable ones (ids and
-   short display strings — `party_media`'s quilt id or a role or tag string),
-   which ride in.
+8. **Emit an event for each actual state change**, carrying `party_id`. Events
+   are change signals: after the existing validation and cap authorization,
+   equal-value replacements still perform their underlying write but suppress
+   the redundant event. The first attachment, including an explicitly empty
+   value, remains a meaningful change; absent clears stay silent. Payloads are
+   not re-included, except small, stable ones (ids and short display strings —
+   `party_media`'s quilt id or a role or tag string), which ride in.
 9. **Tests:** happy path and each validation abort. Every state-attaching
    extension also needs a wrong-cap test
    (`expected_failure(abort_code = EUnauthorized, location = partyos::party)`

@@ -147,23 +147,57 @@ fun replace_profile_in_place() {
     assert!(card.country().is_none());
     assert_eq!(card.languages().length(), 0);
 
-    // An identical replacement is still a write and emits one complete event.
+    // An identical replacement is still a write but emits no redundant event.
     profile::set_profile(&mut p, &cap, b"second".to_string(), option::none(), option::none(), vector[]);
     let set_events = event::events_by_type<profile::PartyProfileSetEvent>();
-    assert_eq!(set_events.length(), 3);
-    let (_, _, had_profile, previous_bio_short, previous_bio_long, previous_country,
-        previous_languages, bio_short, bio_long, country, languages) =
-        profile::set_event_fields(&set_events[2]);
-    assert!(had_profile);
-    assert_eq!(previous_bio_short, b"second");
-    assert_eq!(previous_bio_long, option::none());
-    assert_eq!(previous_country, option::none());
-    assert_eq!(previous_languages, vector[]);
-    assert_eq!(bio_short, b"second");
-    assert_eq!(bio_long, option::none());
-    assert_eq!(country, option::none());
-    assert_eq!(languages, vector[]);
+    assert_eq!(set_events.length(), 2);
+    assert_eq!(profile::profile(&p).bio_short(), b"second".to_string());
 
+    destroy(p);
+    destroy(cap);
+}
+
+#[test]
+fun each_profile_component_change_emits() {
+    let ctx = &mut tx_context::dummy();
+    let (mut p, cap) = new_party(ctx);
+    profile::set_profile(
+        &mut p,
+        &cap,
+        b"bio".to_string(),
+        option::some(b"long".to_string()),
+        option::some(cc::new(b"JP".to_string())),
+        vector[lc::new(b"en".to_string())],
+    );
+
+    // Keep the earlier fields equal so each later component of the complete
+    // comparison is exercised independently.
+    profile::set_profile(
+        &mut p,
+        &cap,
+        b"bio".to_string(),
+        option::some(b"changed long".to_string()),
+        option::some(cc::new(b"JP".to_string())),
+        vector[lc::new(b"en".to_string())],
+    );
+    profile::set_profile(
+        &mut p,
+        &cap,
+        b"bio".to_string(),
+        option::some(b"changed long".to_string()),
+        option::some(cc::new(b"US".to_string())),
+        vector[lc::new(b"en".to_string())],
+    );
+    profile::set_profile(
+        &mut p,
+        &cap,
+        b"bio".to_string(),
+        option::some(b"changed long".to_string()),
+        option::some(cc::new(b"US".to_string())),
+        vector[lc::new(b"ja".to_string())],
+    );
+    assert_eq!(event::events_by_type<profile::PartyProfileSetEvent>().length(), 4);
+    assert_eq!(profile::profile(&p).languages()[0].code(), b"ja".to_string());
     destroy(p);
     destroy(cap);
 }
@@ -314,7 +348,7 @@ fun maximum_profile_event_sizes_are_stable() {
         &cap,
         long_string(300),
         option::some(long_string(8192)),
-        option::some(cc::new(b"JP".to_string())),
+        option::some(cc::new(b"US".to_string())),
         languages,
     );
     let set_events = event::events_by_type<profile::PartyProfileSetEvent>();
@@ -465,6 +499,18 @@ fun set_profile_replace_with_wrong_cap_aborts() {
     // Authorization must happen before reading or mutating the existing
     // snapshot.
     profile::set_profile(&mut p, &other_cap, b"replacement".to_string(), option::none(), option::none(), vector[]);
+    abort
+}
+
+#[test, expected_failure(abort_code = EUnauthorized, location = partyos::party)]
+fun set_profile_equal_with_wrong_cap_aborts() {
+    let ctx = &mut tx_context::dummy();
+    let (mut p, cap) = new_party(ctx);
+    let (_other, other_cap) = new_party(ctx);
+    profile::set_profile(&mut p, &cap, b"initial".to_string(), option::none(), option::none(), vector[]);
+
+    // Equality must not bypass the existing PartyAdminCap authorization.
+    profile::set_profile(&mut p, &other_cap, b"initial".to_string(), option::none(), option::none(), vector[]);
     abort
 }
 

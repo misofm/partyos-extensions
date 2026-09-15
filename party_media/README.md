@@ -7,9 +7,9 @@ one blob each, which matters when the platform sponsors storage. Only the
 quilt's blob id is held on-chain, as a dynamic field on the party's `UID`,
 gated by the `PartyAdminCap`; views are permissionless. The chain is
 deliberately role-agnostic: which patch is the avatar vs the header is a
-client convention, derived off-chain — never stored here. Every successful
-mutation emits a complete, fixed-size event snapshot; an absent clear is
-silent.
+client convention, derived off-chain — never stored here. Changed mutations
+emit a complete, fixed-size event snapshot; equal replacements still write but
+are silent, and an absent clear is silent.
 
 ## What it stores
 
@@ -17,7 +17,8 @@ silent.
 - Value: `Media { quilt: u256 }` — the Walrus quilt blob id holding all of
   the party's images. Individual images are quilt patches addressed by
   identifier ("avatar", "header", …); those roles are not stored.
-- `set_media` replaces the id in place, including an identical replacement;
+- `set_media` replaces the id in place; an identical replacement is a silent
+  write;
   `clear_media` removes the field entirely and is a no-op when none is set.
 
 ## API
@@ -30,7 +31,7 @@ aborts with `EUnauthorized` (0) at `partyos::party`.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_media(party, cap, quilt)` | Set or replace the party's media quilt; emits one complete `MediaSetEvent` | `EZeroQuilt` (0) on a zero quilt id; wrong cap at `partyos::party` |
+| `set_media(party, cap, quilt)` | Set or replace the party's media quilt; changed values emit one complete `MediaSetEvent`, equal replacements still write silently | `EZeroQuilt` (0) on a zero quilt id; wrong cap at `partyos::party` |
 | `clear_media(party, cap)` | Remove the party's media and emit its prior quilt — no-op (and silent) when unset | wrong cap at `partyos::party` |
 
 ### Views
@@ -44,7 +45,7 @@ aborts with `EUnauthorized` (0) at `partyos::party`.
 
 | Event | When | Payload |
 |---|---|---|
-| `MediaSetEvent` | Quilt set or replaced, including an equal replacement | `party_id`, `admin_cap_id`, `existed_before`, `previous_quilt`, `quilt`; the serialized payload is 129 bytes, and `previous_quilt` is zero only when `existed_before` is false |
+| `MediaSetEvent` | Quilt set or replaced with a different id | `party_id`, `admin_cap_id`, `existed_before`, `previous_quilt`, `quilt`; the serialized payload is 129 bytes, and `previous_quilt` is zero only when `existed_before` is false. Equal replacements emit no event |
 | `MediaClearedEvent` | Existing media removed; never on an absent clear | `party_id`, `admin_cap_id`, `previous_quilt`; the serialized payload is 96 bytes |
 
 ## Errors
@@ -57,7 +58,7 @@ aborts with `EUnauthorized` (0) at `partyos::party`.
 ## Dependencies
 
 - [`partyos`](https://github.com/misofm/partyos) at exact revision
-  `841a875a4989082a0ebeb1beb464b71f9ea2bd73` — the `Party` /
+  `c23df9018e15a76395c65bc8dfca4b365140aa12` — the `Party` /
   `PartyAdminCap` authorization core.
 - Otherwise only the Sui framework (`sui::dynamic_field`, `sui::event`). The
   manifest has no local-path or floating dependencies.

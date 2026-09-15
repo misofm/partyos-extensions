@@ -164,21 +164,12 @@ fun stored_empty_and_identical_replacement_have_complete_events() {
     assert_eq!(labels, vector[]);
     assert_eq!(urls, vector[]);
 
-    // Replacing an attached empty list with an identical empty list is still a
-    // successful write and emits exactly one complete replacement event.
+    // Replacing an attached empty list with an identical empty list still
+    // performs the write but emits no redundant replacement event.
     cta::set_ctas(&mut p, &cap, vector[]);
     let set_events = event::events_by_type<cta::CtasSetEvent>();
-    assert_eq!(set_events.length(), 2);
-    let (_, _, existed_before, previous_count, count,
-        previous_labels, previous_urls, labels, urls) =
-        cta::set_event_fields(&set_events[1]);
-    assert!(existed_before);
-    assert_eq!(previous_count, 0);
-    assert_eq!(count, 0);
-    assert_eq!(previous_labels, vector[]);
-    assert_eq!(previous_urls, vector[]);
-    assert_eq!(labels, vector[]);
-    assert_eq!(urls, vector[]);
+    assert_eq!(set_events.length(), 1);
+    assert!(cta::has_ctas(&p));
 
     // Clearing the stored empty list emits a clear event with count zero.
     cta::clear_ctas(&mut p, &cap);
@@ -288,20 +279,11 @@ fun maximum_payload_is_complete_on_set_replace_and_clear() {
     assert_eq!(labels, expected_labels);
     assert_eq!(urls, expected_urls);
 
-    // Replacing with another maximum list includes both complete snapshots.
+    // Replacing with an identical maximum list keeps the complete value but
+    // does not emit a redundant replacement event.
     cta::set_ctas(&mut p, &cap, max_ctas());
     let set_events = event::events_by_type<cta::CtasSetEvent>();
-    assert_eq!(set_events.length(), 2);
-    let (_, _, existed_before, previous_count, count,
-        previous_labels, previous_urls, labels, urls) =
-        cta::set_event_fields(&set_events[1]);
-    assert!(existed_before);
-    assert_eq!(previous_count, 20);
-    assert_eq!(count, 20);
-    assert_eq!(previous_labels, expected_labels);
-    assert_eq!(previous_urls, expected_urls);
-    assert_eq!(labels, expected_labels);
-    assert_eq!(urls, expected_urls);
+    assert_eq!(set_events.length(), 1);
 
     cta::clear_ctas(&mut p, &cap);
     let cleared_events = event::events_by_type<cta::CtasClearedEvent>();
@@ -313,6 +295,28 @@ fun maximum_payload_is_complete_on_set_replace_and_clear() {
     assert_eq!(previous_count, 20);
     assert_eq!(previous_labels, expected_labels);
     assert_eq!(previous_urls, expected_urls);
+    destroy(p);
+    destroy(cap);
+}
+
+#[test]
+fun equal_cta_list_is_silent_but_component_change_emits() {
+    let ctx = &mut tx_context::dummy();
+    let (mut p, cap) = new_party(ctx);
+    cta::set_ctas(&mut p, &cap, vector[
+        cta::new_cta(b"Listen".to_string(), b"https://one.example".to_string()),
+    ]);
+    cta::set_ctas(&mut p, &cap, vector[
+        cta::new_cta(b"Listen".to_string(), b"https://one.example".to_string()),
+    ]);
+    assert_eq!(event::events_by_type<cta::CtasSetEvent>().length(), 1);
+
+    // The label and count stay equal, but the URL is a real value change.
+    cta::set_ctas(&mut p, &cap, vector[
+        cta::new_cta(b"Listen".to_string(), b"https://two.example".to_string()),
+    ]);
+    assert_eq!(event::events_by_type<cta::CtasSetEvent>().length(), 2);
+    assert_eq!(cta::ctas(&p)[0].url(), b"https://two.example".to_string());
     destroy(p);
     destroy(cap);
 }
@@ -395,6 +399,22 @@ fun set_ctas_replace_with_wrong_cap_aborts() {
     // Replacement must authorize before reading or mutating the existing list.
     cta::set_ctas(&mut p, &other_cap, vector[
         cta::new_cta(b"Replacement".to_string(), b"https://replacement.example".to_string()),
+    ]);
+    abort
+}
+
+#[test, expected_failure(abort_code = EUnauthorized, location = partyos::party)]
+fun set_ctas_equal_with_wrong_cap_aborts() {
+    let ctx = &mut tx_context::dummy();
+    let (mut p, cap) = new_party(ctx);
+    let (_other, other_cap) = new_party(ctx);
+    cta::set_ctas(&mut p, &cap, vector[
+        cta::new_cta(b"Initial".to_string(), b"https://initial.example".to_string()),
+    ]);
+
+    // Equality must not bypass the existing PartyAdminCap authorization.
+    cta::set_ctas(&mut p, &other_cap, vector[
+        cta::new_cta(b"Initial".to_string(), b"https://initial.example".to_string()),
     ]);
     abort
 }

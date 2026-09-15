@@ -40,6 +40,18 @@ fun set_link_with_wrong_cap_aborts_when_existing() {
 }
 
 #[test, expected_failure(abort_code = EUnauthorized, location = partyos::party)]
+fun set_link_equal_with_wrong_cap_aborts() {
+    let ctx = &mut tx_context::dummy();
+    let (mut p, cap) = new_party(ctx);
+    let (_other, other_cap) = new_party(ctx);
+    links::set_link(&mut p, &cap, social::x(b"same".to_string()));
+
+    // Equality must not bypass the existing PartyAdminCap authorization.
+    links::set_link(&mut p, &other_cap, social::x(b"same".to_string()));
+    abort
+}
+
+#[test, expected_failure(abort_code = EUnauthorized, location = partyos::party)]
 fun clear_link_with_wrong_cap_aborts_when_absent() {
     let ctx = &mut tx_context::dummy();
     let (mut p, _cap) = new_party(ctx);

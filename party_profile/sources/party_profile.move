@@ -11,10 +11,11 @@
 /// validated code primitives (`country_code`, `language_code`), so a stored value
 /// is always a real code. The party's `name` is NOT duplicated here — it lives on
 /// the core `Party` (`party::set_name`) — and the join date comes from the party's
-/// creation event (the indexer has it for free). Every successful set emits a
-/// complete before/after byte snapshot and the authorizing cap address; a clear
-/// emits the complete removed snapshot only when a profile exists. All writes
-/// are cap-gated through `party::uid_mut`, and views are permissionless.
+/// creation event (the indexer has it for free). Each changed set emits a
+/// complete before/after byte snapshot and the authorizing cap address; equal
+/// replacements still write but do not emit. A clear emits the complete removed
+/// snapshot only when a profile exists. All writes are cap-gated through
+/// `party::uid_mut`, and views are permissionless.
 module party_profile::party_profile;
 
 use country_code::country_code::CountryCode;
@@ -108,8 +109,9 @@ public struct PartyProfileClearedEvent has copy, drop {
 /// Sets (creates or replaces) the party's whole profile. Validation and profile
 /// construction happen before authorization, preserving validation precedence;
 /// authorization happens before any dynamic-field snapshot or mutation. Every
-/// successful call, including an identical replacement, emits exactly one event
-/// containing complete prior and resulting raw-byte snapshots.
+/// successful call performs the requested insert or replacement. An event is
+/// emitted only when the complete profile value changes; an initial profile,
+/// including one with explicit empty optional fields, always emits.
 public fun set_profile(
     self: &mut Party,
     cap: &PartyAdminCap,
@@ -138,25 +140,32 @@ public fun set_profile(
         previous_languages,
     ) = previous_profile_bytes(uid, had_profile);
     let (bio_short, bio_long, country, languages) = profile_bytes(&profile);
+    let value_changed = !had_profile
+        || previous_bio_short != bio_short
+        || previous_bio_long != bio_long
+        || previous_country != country
+        || previous_languages != languages;
 
     if (had_profile) {
         *df::borrow_mut(uid, ProfileKey()) = profile;
     } else {
         df::add(uid, ProfileKey(), profile);
     };
-    emit(PartyProfileSetEvent {
-        party_id,
-        admin_cap_id,
-        had_profile,
-        previous_bio_short,
-        previous_bio_long,
-        previous_country,
-        previous_languages,
-        bio_short,
-        bio_long,
-        country,
-        languages,
-    });
+    if (value_changed) {
+        emit(PartyProfileSetEvent {
+            party_id,
+            admin_cap_id,
+            had_profile,
+            previous_bio_short,
+            previous_bio_long,
+            previous_country,
+            previous_languages,
+            bio_short,
+            bio_long,
+            country,
+            languages,
+        });
+    };
 }
 
 /// Removes the party's profile. Authorization happens before checking
