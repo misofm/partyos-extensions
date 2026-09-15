@@ -43,8 +43,8 @@ public struct LinkClearedEvent<phantom Data> has copy, drop {
 // === Write API ===
 
 /// Sets (or replaces) a platform's link on the party. The primitive emits one
-/// `PlatformLinkSetEvent<Data>` for every successful call, including an equal
-/// replacement.
+/// `PlatformLinkSetEvent<Data>` for an insertion or changed replacement; an
+/// equal replacement still writes silently.
 public fun set_link<Data: copy + drop + store>(
     self: &mut Party,
     cap: &PartyAdminCap,

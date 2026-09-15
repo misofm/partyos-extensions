@@ -46,7 +46,7 @@ with `EUnauthorized` at `partyos::party`.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_ctas(party, cap, ctas)` | Set or replace the party's ordered CTA list | `ETooManyCtas` (4) when the list exceeds 20 |
+| `set_ctas(party, cap, ctas)` | Set or replace the party's ordered CTA list; changed values emit a complete event, equal replacements still write silently | `ETooManyCtas` (4) when the list exceeds 20 |
 | `clear_ctas(party, cap)` | Remove the party's CTA list | — (no-op when none is set) |
 
 ### Views
@@ -59,12 +59,12 @@ with `EUnauthorized` at `partyos::party`.
 ## Events
 
 Events carry primitive addresses and raw UTF-8 bytes, preserving list order and
-duplicates. They are emitted once per successful state mutation; an absent
-clear is silent.
+duplicates. They are emitted once per changed state mutation; equal
+replacements still write the list but are silent, and an absent clear is silent.
 
 | Event | When | Payload |
 |---|---|---|
-| `CtasSetEvent` | `set_ctas` writes the list (set, replace, empty, or identical) | `party_id`, `admin_cap_id`, `existed_before`, `previous_count`, `count`, complete `previous_labels`/`previous_urls`, and complete resulting `labels`/`urls` |
+| `CtasSetEvent` | `set_ctas` changes the list (set, replace, or empty initial attachment) | `party_id`, `admin_cap_id`, `existed_before`, `previous_count`, `count`, complete `previous_labels`/`previous_urls`, and complete resulting `labels`/`urls`; equal replacements emit no event |
 | `CtasClearedEvent` | `clear_ctas` removes an existing list — not emitted on a no-op clear | `party_id`, `admin_cap_id`, `previous_count`, and complete removed `previous_labels`/`previous_urls` |
 
 ## Errors
@@ -83,7 +83,7 @@ A wrong `PartyAdminCap` aborts with `EUnauthorized` (0) at
 ## Dependencies
 
 - [`partyos`](https://github.com/misofm/partyos) at exact revision
-  `841a875a4989082a0ebeb1beb464b71f9ea2bd73` — the `Party` /
+  `c23df9018e15a76395c65bc8dfca4b365140aa12` — the `Party` /
   `PartyAdminCap` authorization core.
 - Nothing else beyond the Sui framework (`sui::dynamic_field`, `sui::event`,
   `std::string`) — no primitive or protocol dependencies, by design. The
@@ -104,7 +104,8 @@ A wrong `PartyAdminCap` aborts with `EUnauthorized` (0) at
   dynamic-field read. `party_id` and `admin_cap_id` are primitive addresses.
 - **Empty vs. absent.** `set_ctas` with an empty vector stores an empty list
   (`CtasSetEvent` with `existed_before = false` and `count = 0` on first set);
-  replacing that stored empty list reports `existed_before = true`;
+  replacing that stored empty list performs the write silently because the
+  complete value is unchanged;
   `clear_ctas` removes the field and reports the removed count (including
   zero). `ctas()` returns an empty vector in both absent and stored-empty
   states — use `has_ctas` or event `existed_before` when the distinction

@@ -66,7 +66,7 @@ surfaces from a dependency:
 ## Dependencies
 
 - [`partyos`](https://github.com/misofm/partyos) at
-  `819fde6f34c0bc7eeb57ec7340cdf13dc56b3fca` — `Party` authorization.
+  `c23df9018e15a76395c65bc8dfca4b365140aa12` — `Party` authorization.
 - [`typed_set`](https://github.com/unconfirmedlabs/typed_set) at
   `b37474cbde166b7ddf8a3b615cd89f90182ace6f` — bounded-set storage,
   duplicate/capacity checks, and field reclamation.

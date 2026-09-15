@@ -12,9 +12,10 @@
 /// The CTAs are an ordered list: **position is priority**. The whole list is
 /// written at once (`set_ctas`) — the natural fit for a drag-to-reorder editor
 /// that saves on submit — so there are no per-entry ids to track. Gated by the
-/// `PartyAdminCap`; views are permissionless. Each successful write emits one
+/// `PartyAdminCap`; views are permissionless. Each changed write emits one
 /// self-contained event with the authorizing cap address and complete ordered
-/// prior/resulting label and URL bytes; an absent clear is silent.
+/// prior/resulting label and URL bytes; an absent clear is silent. Equal
+/// replacements still perform the write but do not emit a change event.
 module party_cta::party_cta;
 
 use partyos::party::{Party, PartyAdminCap};
@@ -110,9 +111,10 @@ public fun url(self: &Cta): String {
 // === Write API ===
 
 /// Sets (or replaces) the party's ordered CTA list. Position is priority.
-/// Length is checked before authorization. Every successful call, including an
-/// empty or identical replacement, emits exactly one event with complete prior
-/// and resulting label and URL byte vectors.
+/// Length is checked before authorization. Every successful call performs the
+/// requested insert or replacement. An event is emitted only when the complete
+/// ordered CTA value changes; an empty first attachment remains a meaningful
+/// insert and emits.
 public fun set_ctas(self: &mut Party, cap: &PartyAdminCap, ctas: vector<Cta>) {
     assert!(ctas.length() <= MAX_CTAS, ETooManyCtas);
     let party_id = object::id(self).to_address();
@@ -123,23 +125,30 @@ public fun set_ctas(self: &mut Party, cap: &PartyAdminCap, ctas: vector<Cta>) {
     let existed_before = df::exists(uid, CtasKey());
     let (previous_count, previous_labels, previous_urls) = previous_cta_bytes(uid, existed_before);
     let (labels, urls) = cta_bytes(&ctas);
+    let value_changed = if (existed_before) {
+        *df::borrow(uid, CtasKey()) != ctas
+    } else {
+        true
+    };
 
     if (existed_before) {
         *df::borrow_mut(uid, CtasKey()) = ctas;
     } else {
         df::add(uid, CtasKey(), ctas);
     };
-    emit(CtasSetEvent {
-        party_id,
-        admin_cap_id,
-        existed_before,
-        previous_count,
-        count,
-        previous_labels,
-        previous_urls,
-        labels,
-        urls,
-    });
+    if (value_changed) {
+        emit(CtasSetEvent {
+            party_id,
+            admin_cap_id,
+            existed_before,
+            previous_count,
+            count,
+            previous_labels,
+            previous_urls,
+            labels,
+            urls,
+        });
+    };
 }
 
 /// Removes the party's CTA list. Authorization happens before checking

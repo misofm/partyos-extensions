@@ -23,15 +23,15 @@ contains no funds or automation entrypoints.
 
 | Dependency | Repository | Revision |
 |---|---|---|
-| `partyos` | `https://github.com/misofm/partyos.git` | `841a875a4989082a0ebeb1beb464b71f9ea2bd73` |
+| `partyos` | `https://github.com/misofm/partyos.git` | `c23df9018e15a76395c65bc8dfca4b365140aa12` |
 
 The manifest has no local-path or floating dependencies.
 
 ## Verification
 
-- Verified Testnet package tests: **16/16**, including expected-failure paths covering all four
-  CTA validators, list capacity ordering, and wrong-cap set/replace/clear
-  authorization.
+- Verified Testnet package tests: **18/18**, including expected-failure paths covering all four
+  CTA validators, list capacity ordering, equal-write silence, component
+  changes, and wrong-cap set/replace/clear authorization.
 - Strict Testnet and Mainnet lint builds passed with warnings as errors.
 - Production instruction coverage: **255/255 instructions (100.00%)**.
 - End-to-end scenario: Party creation and share, cap transfer, later cap-gated

@@ -79,17 +79,11 @@ fun insert_different_and_equal_replace_events() {
     assert_eq!(primitive::set_event_data_bcs_hash(&sets[1]), second_hash);
 
     links::set_link(&mut p, &cap, social::x(b"second".to_string()));
-    assert_eq!(event::num_events(), before + 3);
+    // Equal replacement still writes the complete value but emits no event.
+    assert_eq!(event::num_events(), before + 2);
     let sets = event::events_by_type<primitive::PlatformLinkSetEvent<XData>>();
-    assert_eq!(sets.length(), 3);
-    assert_eq!(primitive::set_event_parent_id(&sets[2]), parent_id);
-    assert_eq!(primitive::set_event_data_type(&sets[2]), data_type);
-    assert!(primitive::set_event_existed_before(&sets[2]));
-    assert!(primitive::set_event_exists_after(&sets[2]));
-    assert_eq!(primitive::set_event_previous_bcs_length(&sets[2]), second_bcs.length());
-    assert_eq!(primitive::set_event_previous_bcs_hash(&sets[2]), second_hash);
-    assert_eq!(primitive::set_event_data_bcs_length(&sets[2]), second_bcs.length());
-    assert_eq!(primitive::set_event_data_bcs_hash(&sets[2]), second_hash);
+    assert_eq!(sets.length(), 2);
+    assert_eq!(links::link<XData>(&p).destroy_some().data().handle(), b"second".to_string());
     assert_eq!(event::events_by_type<links::LinkSetEvent<XData>>().length(), 0);
     assert_eq!(event::events_by_type<links::LinkClearedEvent<XData>>().length(), 0);
 

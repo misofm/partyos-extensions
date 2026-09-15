@@ -20,9 +20,10 @@ reads back, so a platform reshaping its URLs needs no on-chain change.
 - Value: `PlatformLink<Data> { data }` where `Data: copy + drop + store` is
   the platform's native identifier(s) — a handle, id, or subdomain.
 - Exactly one link per `Data` type per `UID`; `set` replaces in place.
-- `set` emits `PlatformLinkSetEvent<Data>` for inserts, replacements, and equal
-  replacements; `remove` and `clear` emit `PlatformLinkRemovedEvent<Data>` only
-  when a link was present. Events carry no full payload bytes.
+- `set` emits `PlatformLinkSetEvent<Data>` for inserts and changed replacements;
+  equal replacements still write silently. `remove` and `clear` emit
+  `PlatformLinkRemovedEvent<Data>` only when a link was present. Events carry no
+  full payload bytes.
 
 The module also owns the shared storage backstops so every payload package
 uses the same numbers:
@@ -59,7 +60,7 @@ consumer's concern (e.g. `party_platform_link` gates with `PartyAdminCap`).
 
 | Event | When | Payload |
 |---|---|---|
-| `PlatformLinkSetEvent<Data>` | `set`, including equal replacement | `parent_id`, raw defining-ID-qualified `data_type`, existence transition, and previous/new `Data` BCS length plus Blake2b-256 hash |
+| `PlatformLinkSetEvent<Data>` | `set` on insert or a changed replacement | `parent_id`, raw defining-ID-qualified `data_type`, existence transition, and previous/new `Data` BCS length plus Blake2b-256 hash; equal replacements emit no event |
 | `PlatformLinkRemovedEvent<Data>` | present `remove` or `clear` | `parent_id`, raw defining-ID-qualified `data_type`, `true`/`false` existence transition, and removed `Data` BCS length plus Blake2b-256 hash |
 
 Absent `clear` is silent. The event's `data_type` is not BCS-wrapped; it is the

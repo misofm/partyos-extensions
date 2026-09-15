@@ -20,7 +20,7 @@ vocabulary object exists; removal is by ID. All mutations require the matching
 
 | Dependency | Repository | Revision |
 |---|---|---|
-| `partyos` | `https://github.com/misofm/partyos.git` | `819fde6f34c0bc7eeb57ec7340cdf13dc56b3fca` |
+| `partyos` | `https://github.com/misofm/partyos.git` | `c23df9018e15a76395c65bc8dfca4b365140aa12` |
 | `typed_set` | `https://github.com/unconfirmedlabs/typed_set.git` | `b37474cbde166b7ddf8a3b615cd89f90182ace6f` |
 | `genre` | `https://github.com/misofm/genre.git` | `09f6882b57b19498f36fa15840cd7ed61094dc41` |
 

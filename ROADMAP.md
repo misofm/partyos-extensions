@@ -27,6 +27,10 @@ platform values only; `party_platform_link` supplies their cap-gated storage.
    verification, which is gated by Miso's cap and lives *outside* the party.
 5. **No PII/UI-state on-chain.** Emails, payout addresses, fees, and layout/theme
    config are off-chain or modeled as links; on-chain is permanent and public.
+6. **Change events describe state changes.** Setters still validate, authorize,
+   and perform equal-value replacements, but suppress a redundant event. An
+   initial attachment, including an explicitly empty value, remains eventful;
+   clearing an absent value is silent.
 
 ## Where each field lives
 

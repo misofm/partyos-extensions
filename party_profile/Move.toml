@@ -5,6 +5,6 @@ license = "Apache 2.0"
 authors = ["Miso Labs, Inc. (build@miso.network)"]
 
 [dependencies]
-partyos = { git = "https://github.com/misofm/partyos.git", rev = "3626ee19e42cf8df5ecea59cd5be6cb5a1538cc1" }
+partyos = { git = "https://github.com/misofm/partyos.git", rev = "c23df9018e15a76395c65bc8dfca4b365140aa12" }
 country_code = { git = "https://github.com/unconfirmedlabs/country_code.git", rev = "b4c92cb7f772879335344d7b6499b5fa4eafef56" }
 language_code = { git = "https://github.com/unconfirmedlabs/language_code.git", rev = "61542357f3d2ff989d120185046def7cf6c8bdcb" }

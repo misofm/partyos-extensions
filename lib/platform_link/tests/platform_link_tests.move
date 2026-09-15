@@ -130,7 +130,7 @@ fun clear_absent_repeated_is_silent_and_present_emits() {
 }
 
 #[test]
-fun equal_replacement_emits_event() {
+fun equal_replacement_is_silent_but_change_emits() {
     let ctx = &mut tx_context::dummy();
     let mut uid = object::new(ctx);
     let data = FooData { v: 9 };
@@ -139,15 +139,24 @@ fun equal_replacement_emits_event() {
 
     pl::set(&mut uid, pl::new(data));
     pl::set(&mut uid, pl::new(data));
+    assert_eq!(event::num_events(), 1);
+    assert_eq!(pl::borrow<FooData>(&uid).data().v, 9);
+
+    // A complete payload change emits, even when the link type and BCS size
+    // remain the same.
+    let changed = FooData { v: 10 };
+    let changed_bcs = bcs::to_bytes(&changed);
+    let changed_bcs_hash = blake2b256(&changed_bcs);
+    pl::set(&mut uid, pl::new(changed));
     assert_eq!(event::num_events(), 2);
     let set_events = event::events_by_type<pl::PlatformLinkSetEvent<FooData>>();
-    let equal_replacement = &set_events[1];
-    assert!(pl::set_event_existed_before(equal_replacement));
-    assert!(pl::set_event_exists_after(equal_replacement));
-    assert_eq!(pl::set_event_previous_bcs_length(equal_replacement), data_bcs.length());
-    assert_eq!(pl::set_event_previous_bcs_hash(equal_replacement), data_bcs_hash);
-    assert_eq!(pl::set_event_data_bcs_length(equal_replacement), data_bcs.length());
-    assert_eq!(pl::set_event_data_bcs_hash(equal_replacement), data_bcs_hash);
+    let changed_event = &set_events[1];
+    assert!(pl::set_event_existed_before(changed_event));
+    assert!(pl::set_event_exists_after(changed_event));
+    assert_eq!(pl::set_event_previous_bcs_length(changed_event), data_bcs.length());
+    assert_eq!(pl::set_event_previous_bcs_hash(changed_event), data_bcs_hash);
+    assert_eq!(pl::set_event_data_bcs_length(changed_event), changed_bcs.length());
+    assert_eq!(pl::set_event_data_bcs_hash(changed_event), changed_bcs_hash);
 
     pl::clear<FooData>(&mut uid);
     uid.delete();

@@ -23,7 +23,7 @@ remain client concerns.
 
 | Dependency | Repository | Revision |
 |---|---|---|
-| `partyos` | `https://github.com/misofm/partyos.git` | `841a875a4989082a0ebeb1beb464b71f9ea2bd73` |
+| `partyos` | `https://github.com/misofm/partyos.git` | `c23df9018e15a76395c65bc8dfca4b365140aa12` |
 | `typed_set` | `https://github.com/unconfirmedlabs/typed_set.git` | `b37474cbde166b7ddf8a3b615cd89f90182ace6f` |
 
 The manifest has no local-path or floating dependencies.

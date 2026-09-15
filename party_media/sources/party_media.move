@@ -13,10 +13,10 @@
 /// header is a client convention (quilt patch *identifiers*, e.g. "avatar" /
 /// "header"), derived off-chain — never stored here. Updating any image means
 /// re-storing the quilt and calling `set_media` with the new id.
-/// Every successful set emits the prior/resulting quilt ids and the
-/// authorizing cap address; a clear emits the removed id only when a field
-/// existed. All writes are cap-gated through `party::uid_mut`, and views are
-/// permissionless.
+/// Each changed set emits the prior/resulting quilt ids and the authorizing cap
+/// address; equal replacements still write but do not emit. A clear emits the
+/// removed id only when a field existed. All writes are cap-gated through
+/// `party::uid_mut`, and views are permissionless.
 module party_media::party_media;
 
 use partyos::party::{Party, PartyAdminCap};
@@ -71,8 +71,9 @@ public struct MediaClearedEvent has copy, drop {
 // === Write API ===
 
 /// Sets (or replaces) the party's media quilt. Aborts on a zero id before
-/// authorization. Every successful call, including an identical replacement,
-/// emits exactly one event with the complete prior/resulting quilt snapshot.
+/// authorization. Every successful call performs the requested insert or
+/// replacement. An event is emitted only when the quilt id changes; an initial
+/// nonzero attachment always emits.
 public fun set_media(self: &mut Party, cap: &PartyAdminCap, quilt: u256) {
     assert!(quilt != 0, EZeroQuilt);
     let party_id = object::id(self).to_address();
@@ -87,13 +88,15 @@ public fun set_media(self: &mut Party, cap: &PartyAdminCap, quilt: u256) {
     } else {
         df::add(uid, MediaKey(), Media { quilt });
     };
-    emit(MediaSetEvent {
-        party_id,
-        admin_cap_id,
-        existed_before,
-        previous_quilt,
-        quilt,
-    });
+    if (!existed_before || previous_quilt != quilt) {
+        emit(MediaSetEvent {
+            party_id,
+            admin_cap_id,
+            existed_before,
+            previous_quilt,
+            quilt,
+        });
+    };
 }
 
 /// Removes the party's media. Authorization happens before checking

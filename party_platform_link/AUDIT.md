@@ -15,7 +15,9 @@ Release-ready. No security or correctness findings remain.
 It generically sets/replaces or clears one `PlatformLink<Data>` dynamic field on
 a Party, gates writes with the matching `PartyAdminCap`, and provides
 permissionless optional reads. The primitive owns the authoritative rich
-`PlatformLinkSetEvent<Data>` and `PlatformLinkRemovedEvent<Data>` emissions;
+`PlatformLinkSetEvent<Data>` and `PlatformLinkRemovedEvent<Data>` emissions for
+insertions, changed replacements, and present clears; equal replacements still
+write the value but are silent;
 the wrapper's retained `LinkSetEvent<Data>` and `LinkClearedEvent<Data>` types
 are inert compatibility declarations. Clear authenticates before its
 absent-state no-op. The package adds no payload validation, funds, Vault
@@ -25,25 +27,25 @@ borrowing, Action logic, or entry automation.
 
 | Dependency | Kind | Location | Mode |
 |---|---|---|---|
-| `partyos` | Git pin | `https://github.com/misofm/partyos.git` @ `841a875a4989082a0ebeb1beb464b71f9ea2bd73` | production |
+| `partyos` | Git pin | `https://github.com/misofm/partyos.git` @ `c23df9018e15a76395c65bc8dfca4b365140aa12` | production |
 | `platform_link` | local-path | `../lib/platform_link` | production |
 | `party_social` | local-path | `../party_social` | test-only |
 
 `partyos` is the manifest's only Git pin. `platform_link` and `party_social`
 are local-path dependencies, not floating; `party_social` is excluded from
-the production graph by `modes = ["test"]`. `Move.lock` and
-`Published.toml` are retained unchanged.
+the production graph by `modes = ["test"]`. `Move.lock` retains both
+environment pins, and `Published.toml` is retained unchanged.
 
 ## Verification
 
-- Package tests: **8/8** on both Testnet and Mainnet, including four
-  expected-failure paths for wrong-cap absent/present set and clear.
+- Package tests: **9/9** on both Testnet and Mainnet, including five
+  expected-failure paths for wrong-cap absent/present/equal set and clear.
 - Strict Testnet and Mainnet lint builds passed with warnings as errors.
 - Production instruction coverage: **100.00%** on both Testnet and Mainnet
   (`set_link`, `clear_link`, `has_link`, and `link`).
 - Event tests cover exact primitive parent/type/hash/length fields, one-event
-  deltas for insert/different/equal replacement/present clear, silence for
-  absent/repeated clear and views, distinct X/Instagram streams and parties,
+  deltas for insert/different replacement/present clear, silence for equal
+  replacement, absent/repeated clear and views, distinct X/Instagram streams and parties,
   inert legacy vectors, and the shared-party cap-holder/reader workflow.
 
 ## Published metadata
