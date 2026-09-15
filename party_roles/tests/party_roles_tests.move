@@ -273,30 +273,26 @@ fun middle_and_final_remove_events_snapshot_counts() {
 }
 
 #[test]
-fun clear_twelve_max_custom_names_has_complete_snapshot_and_size() {
+fun clear_twelve_max_custom_names_has_constant_size() {
     let ctx = &mut tx_context::dummy();
     let (mut p, cap) = new_party(ctx);
     let party_id = object::id(&p).to_address();
     let admin_cap_id = object::id(&cap).to_address();
-    let mut expected_names = vector[];
     12u64.do!(|i| {
         let name = bytes_of_len(60, (65 + i) as u8);
-        expected_names.push_back(name);
         roles::add_role(&mut p, &cap, roles::custom(name.to_string()));
     });
     roles::clear_roles(&mut p, &cap);
 
     let cleared = event::events_by_type<roles::RolesClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(bcs::to_bytes(&cleared[0]).length(), 826);
-    let (event_party_id, event_cap_id, kinds, names, before, after) =
+    assert_eq!(bcs::to_bytes(&cleared[0]).length(), 80);
+    let (event_party_id, event_cap_id, before, after) =
         roles::cleared_event_fields(&cleared[0]);
     assert_eq!(event_party_id, party_id);
     assert_eq!(event_cap_id, admin_cap_id);
     assert_eq!(before, 12);
     assert_eq!(after, 0);
-    assert_eq!(kinds, vector[8u8, 8u8, 8u8, 8u8, 8u8, 8u8, 8u8, 8u8, 8u8, 8u8, 8u8, 8u8]);
-    assert_eq!(names, expected_names);
     assert!(!roles::has_roles(&p));
 
     destroy(p);
@@ -379,12 +375,10 @@ fun clear_repeated_and_readd_events_start_from_zero() {
     assert_eq!(after, 1);
     let cleared = event::events_by_type<roles::RolesClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    let (event_party_id, event_cap_id, kinds, names, before, after) =
+    let (event_party_id, event_cap_id, before, after) =
         roles::cleared_event_fields(&cleared[0]);
     assert_eq!(event_party_id, party_id);
     assert_eq!(event_cap_id, admin_cap_id);
-    assert_eq!(kinds, vector[0u8]);
-    assert_eq!(names, vector[b"Artist"]);
     assert_eq!(before, 1);
     assert_eq!(after, 0);
     destroy(p);

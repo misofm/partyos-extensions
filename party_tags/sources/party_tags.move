@@ -13,7 +13,7 @@
 /// stored as given (exact dedupe); normalization for search/display is a client
 /// concern. Gated by the `PartyAdminCap`; views are permissionless. Mutation
 /// events carry the party and cap addresses, the raw tag bytes, and before/after
-/// counts; a populated clear also carries the ordered raw tag snapshots.
+/// counts; a populated clear carries counts only.
 module party_tags::party_tags;
 
 use partyos::party::{Party, PartyAdminCap};
@@ -65,7 +65,6 @@ public struct TagRemovedEvent has copy, drop {
 public struct TagsClearedEvent has copy, drop {
     party_id: address,
     admin_cap_id: address,
-    removed_tags: vector<vector<u8>>,
     tag_count_before: u64,
     tag_count_after: u64,
 }
@@ -119,14 +118,11 @@ public fun clear_tags(self: &mut Party, cap: &PartyAdminCap) {
     if (set::exists(uid, TagsKey())) {
         let tags = set::keys<TagsKey, String>(uid, TagsKey());
         let tag_count_before = tags.length();
-        let mut removed_tags = vector[];
-        tags.do_ref!(|tag: &String| removed_tags.push_back(*tag.as_bytes()));
         set::clear<TagsKey, String>(uid, TagsKey());
         let tag_count_after = set::keys<TagsKey, String>(uid, TagsKey()).length();
         emit(TagsClearedEvent {
             party_id,
             admin_cap_id,
-            removed_tags,
             tag_count_before,
             tag_count_after,
         });
@@ -200,11 +196,10 @@ public fun tag_removed_event_fields(
 #[test_only]
 public fun cleared_event_fields(
     event: &TagsClearedEvent,
-): (address, address, vector<vector<u8>>, u64, u64) {
+): (address, address, u64, u64) {
     (
         event.party_id,
         event.admin_cap_id,
-        event.removed_tags,
         event.tag_count_before,
         event.tag_count_after,
     )
@@ -214,6 +209,6 @@ public fun cleared_event_fields(
 #[test_only]
 public fun tags_cleared_event_fields(
     event: &TagsClearedEvent,
-): (address, address, vector<vector<u8>>, u64, u64) {
+): (address, address, u64, u64) {
     cleared_event_fields(event)
 }

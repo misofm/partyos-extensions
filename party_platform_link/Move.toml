@@ -5,7 +5,7 @@ license = "Apache 2.0"
 authors = ["Miso Labs, Inc. (build@miso.network)"]
 
 [dependencies]
-partyos = { git = "https://github.com/misofm/partyos.git", rev = "6dfc6937b996da1a953ee6818d8a03206a23a936" }
+partyos = { git = "https://github.com/misofm/partyos.git", rev = "a55f9a2ae9d782d453305961862789dce9deef5b" }
 platform_link = { local = "../lib/platform_link" }
 
 # Test-only: a concrete platform payload to instantiate the generics in tests.

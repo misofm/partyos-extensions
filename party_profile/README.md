@@ -10,8 +10,8 @@ the party's `name` stays on the core `Party` (`party::set_name`), and the join
 date comes from the party's creation event (the indexer has it for free).
 `country` and `languages` use validated code primitives (`country_code`,
 `language_code`), so a stored value is always a real code. Each changed set
-emits a complete before/after byte snapshot, and an existing clear emits the
-removed snapshot; equal replacements still write silently, and an absent clear
+emits compact country/language context, and an existing clear emits the
+removed country/language codes; equal replacements still write silently, and an absent clear
 is silent.
 
 ## What it stores
@@ -34,8 +34,8 @@ with `EUnauthorized` at `partyos::party`.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_profile(party, cap, bio_short, bio_long, country, languages)` | Create or replace the whole profile card in one call; changed values emit a complete snapshot | validation errors below; wrong cap at `partyos::party` |
-| `clear_profile(party, cap)` | Remove the profile and emit its complete prior snapshot; no-op when none is set (no event then) | wrong cap at `partyos::party` |
+| `set_profile(party, cap, bio_short, bio_long, country, languages)` | Create or replace the whole profile card in one call; changed values emit compact context | validation errors below; wrong cap at `partyos::party` |
+| `clear_profile(party, cap)` | Remove the profile and emit its prior country/language codes; no-op when none is set (no event then) | wrong cap at `partyos::party` |
 
 ### Views
 
@@ -52,8 +52,8 @@ with `EUnauthorized` at `partyos::party`.
 
 | Event | When | Payload |
 |---|---|---|
-| `PartyProfileSetEvent` | Profile created or replaced via `set_profile` when the complete value changes | `party_id`, `admin_cap_id`, `had_profile`, previous/current `bio_short`, `bio_long`, `country`, and ordered `languages` as raw UTF-8 byte vectors. Serialized size is 8601 bytes at the maximum initial payload and 17129 bytes at the maximum replacement payload; equal replacements emit no event. |
-| `PartyProfileClearedEvent` | Existing profile removed via `clear_profile` — not emitted when the call is a no-op | `party_id`, `admin_cap_id`, and the previous `bio_short`, `bio_long`, `country`, and ordered `languages` byte vectors. Maximum serialized size is 8596 bytes. |
+| `PartyProfileSetEvent` | Profile created or replaced via `set_profile` when the complete value changes | `party_id`, `admin_cap_id`, `had_profile`, `previous_country`, `previous_languages`, `country`, `languages` |
+| `PartyProfileClearedEvent` | Existing profile removed via `clear_profile` — not emitted when the call is a no-op | `party_id`, `admin_cap_id`, `previous_country`, `previous_languages` |
 
 ## Errors
 
@@ -97,9 +97,8 @@ All are exact Git pins; this manifest has no local-path dependencies.
 - **The display name is not here.** Read it from the core `Party` object; the
   join date comes from the party's creation event. Do not expect either in
   `Profile`.
-- **Events are complete reconciliation snapshots.** The event fields use raw
-  UTF-8 bytes while preserving ordered language input. `had_profile` is false
-  on an initial insert; initial previous values are empty/none sentinels.
-  An identical replacement still performs the full write but emits no event. A
-  clear carries the removed profile, while an absent clear emits nothing (but
-  still authorizes first).
+- **Events omit bios.** Read the profile when text is needed. Events retain
+  ordered validated country/language codes, party and cap IDs, and initial
+  attachment status. Set payloads are at most 135 BCS bytes; clear payloads
+  are at most 99 bytes. `had_profile` distinguishes first attachment; equal
+  replacement and absent clear remain silent after authorization.

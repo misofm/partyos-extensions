@@ -19,7 +19,6 @@ module party_genre::party_genre;
 
 use genre::genre::Genre;
 use partyos::party::{Party, PartyAdminCap};
-use sui::object::UID;
 use sui::event::emit;
 use typed_set::typed_set as set;
 
@@ -42,8 +41,8 @@ public struct GenreAddedEvent has copy, drop {
     admin_cap_id: address,
     genre_id: address,
     genre_name: vector<u8>,
-    genre_ids_before: vector<address>,
-    genre_ids_after: vector<address>,
+    genre_count_before: u64,
+    genre_count_after: u64,
     max_genres: u64,
 }
 
@@ -52,16 +51,17 @@ public struct GenreRemovedEvent has copy, drop {
     party_id: address,
     admin_cap_id: address,
     genre_id: address,
-    genre_ids_before: vector<address>,
-    genre_ids_after: vector<address>,
+    genre_count_before: u64,
+    genre_count_after: u64,
 }
 
 /// Emitted when a party's entire genre set is removed.
 public struct GenresClearedEvent has copy, drop {
     party_id: address,
     admin_cap_id: address,
+    genre_count_before: u64,
+    genre_count_after: u64,
     genre_ids_before: vector<address>,
-    genre_ids_after: vector<address>,
 }
 
 // === Write API ===
@@ -75,17 +75,17 @@ public fun add_genre(self: &mut Party, cap: &PartyAdminCap, genre: &Genre) {
     let genre_id = object::id(genre);
     let genre_id_address = genre_id.to_address();
     let uid = self.uid_mut(cap);
-    let genre_ids_before = genre_addresses(uid);
+    let genre_count_before = set::keys<GenresKey, ID>(uid, GenresKey()).length();
     set::add(uid, GenresKey(), genre_id, MAX_GENRES);
-    let genre_ids_after = genre_addresses(uid);
+    let genre_count_after = set::keys<GenresKey, ID>(uid, GenresKey()).length();
     let genre_name = *genre.name().as_bytes();
     emit(GenreAddedEvent {
         party_id,
         admin_cap_id,
         genre_id: genre_id_address,
         genre_name,
-        genre_ids_before,
-        genre_ids_after,
+        genre_count_before,
+        genre_count_after,
         max_genres: MAX_GENRES,
     });
 }
@@ -97,15 +97,15 @@ public fun remove_genre(self: &mut Party, cap: &PartyAdminCap, genre_id: ID) {
     let admin_cap_id = object::id(cap).to_address();
     let genre_id_address = genre_id.to_address();
     let uid = self.uid_mut(cap);
-    let genre_ids_before = genre_addresses(uid);
+    let genre_count_before = set::keys<GenresKey, ID>(uid, GenresKey()).length();
     set::remove(uid, GenresKey(), genre_id);
-    let genre_ids_after = genre_addresses(uid);
+    let genre_count_after = set::keys<GenresKey, ID>(uid, GenresKey()).length();
     emit(GenreRemovedEvent {
         party_id,
         admin_cap_id,
         genre_id: genre_id_address,
-        genre_ids_before,
-        genre_ids_after,
+        genre_count_before,
+        genre_count_after,
     });
 }
 
@@ -115,14 +115,16 @@ public fun clear_genres(self: &mut Party, cap: &PartyAdminCap) {
     let admin_cap_id = object::id(cap).to_address();
     let uid = self.uid_mut(cap);
     if (set::exists(uid, GenresKey())) {
-        let genre_ids_before = genre_addresses(uid);
+        let genre_count_before = set::keys<GenresKey, ID>(uid, GenresKey()).length();
+        let genre_ids_before = set::keys<GenresKey, ID>(uid, GenresKey()).map!(|id: ID| id.to_address());
         set::clear<GenresKey, ID>(uid, GenresKey());
-        let genre_ids_after = genre_addresses(uid);
+        let genre_count_after = set::keys<GenresKey, ID>(uid, GenresKey()).length();
         emit(GenresClearedEvent {
+            genre_ids_before,
             party_id,
             admin_cap_id,
-            genre_ids_before,
-            genre_ids_after,
+            genre_count_before,
+            genre_count_after,
         });
     }
 }
@@ -144,28 +146,20 @@ public fun genres(self: &Party): vector<ID> {
     set::keys(self.uid(), GenresKey())
 }
 
-// === Private Functions ===
-
-/// Copies the party's ordered genre ids as addresses for event snapshots.
-fun genre_addresses(uid: &UID): vector<address> {
-    let ids: vector<ID> = set::keys<GenresKey, ID>(uid, GenresKey());
-    ids.map!(|id: ID| id.to_address())
-}
-
 // === Test Functions ===
 
 /// Test-only accessor for every `GenreAddedEvent` field, in declaration order.
 #[test_only]
 public fun added_event_fields(
     event: &GenreAddedEvent,
-): (address, address, address, vector<u8>, vector<address>, vector<address>, u64) {
+): (address, address, address, vector<u8>, u64, u64, u64) {
     (
         event.party_id,
         event.admin_cap_id,
         event.genre_id,
         event.genre_name,
-        event.genre_ids_before,
-        event.genre_ids_after,
+        event.genre_count_before,
+        event.genre_count_after,
         event.max_genres,
     )
 }
@@ -174,7 +168,7 @@ public fun added_event_fields(
 #[test_only]
 public fun genre_added_event_fields(
     event: &GenreAddedEvent,
-): (address, address, address, vector<u8>, vector<address>, vector<address>, u64) {
+): (address, address, address, vector<u8>, u64, u64, u64) {
     added_event_fields(event)
 }
 
@@ -182,13 +176,13 @@ public fun genre_added_event_fields(
 #[test_only]
 public fun removed_event_fields(
     event: &GenreRemovedEvent,
-): (address, address, address, vector<address>, vector<address>) {
+): (address, address, address, u64, u64) {
     (
         event.party_id,
         event.admin_cap_id,
         event.genre_id,
-        event.genre_ids_before,
-        event.genre_ids_after,
+        event.genre_count_before,
+        event.genre_count_after,
     )
 }
 
@@ -196,7 +190,7 @@ public fun removed_event_fields(
 #[test_only]
 public fun genre_removed_event_fields(
     event: &GenreRemovedEvent,
-): (address, address, address, vector<address>, vector<address>) {
+): (address, address, address, u64, u64) {
     removed_event_fields(event)
 }
 
@@ -204,12 +198,13 @@ public fun genre_removed_event_fields(
 #[test_only]
 public fun cleared_event_fields(
     event: &GenresClearedEvent,
-): (address, address, vector<address>, vector<address>) {
+): (address, address, u64, u64, vector<address>) {
     (
         event.party_id,
         event.admin_cap_id,
+        event.genre_count_before,
+        event.genre_count_after,
         event.genre_ids_before,
-        event.genre_ids_after,
     )
 }
 
@@ -217,6 +212,6 @@ public fun cleared_event_fields(
 #[test_only]
 public fun genres_cleared_event_fields(
     event: &GenresClearedEvent,
-): (address, address, vector<address>, vector<address>) {
+): (address, address, u64, u64, vector<address>) {
     cleared_event_fields(event)
 }

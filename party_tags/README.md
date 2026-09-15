@@ -50,9 +50,9 @@ overlong tags before authorization; after those checks, a wrong cap aborts with
 
 | Event | When | Payload |
 |---|---|---|
-| `TagAddedEvent` | `add_tag` succeeds | `party_id`, `admin_cap_id`, raw `tag` bytes, before/after tag counts |
-| `TagRemovedEvent` | `remove_tag` succeeds | `party_id`, `admin_cap_id`, raw `tag` bytes, before/after tag counts |
-| `TagsClearedEvent` | `clear_tags` removes an existing set (not emitted on the no-op path) | `party_id`, `admin_cap_id`, ordered `removed_tags` raw bytes, before/after tag counts |
+| `TagAddedEvent` | `add_tag` succeeds | `party_id`, `admin_cap_id`, `tag`, `tag_count_before`, `tag_count_after` |
+| `TagRemovedEvent` | `remove_tag` succeeds | `party_id`, `admin_cap_id`, `tag`, `tag_count_before`, `tag_count_after` |
+| `TagsClearedEvent` | `clear_tags` removes an existing set (not emitted on the no-op path) | `party_id`, `admin_cap_id`, `tag_count_before`, `tag_count_after` |
 
 ## Errors
 
@@ -91,7 +91,7 @@ Both are exact Git pins; this manifest has no local-path dependencies.
   the platform-link payload packages.
 - **Events carry the tag and count transition.** An indexer can maintain the
   current set from `TagAddedEvent` / `TagRemovedEvent` alone; on
-  `TagsClearedEvent`, drop the whole set using its ordered snapshot. Re-read
+  `TagsClearedEvent`, drop the whole set using its zero resulting count. Re-read
   with `tags()` to re-sync.
 - **`has_tags` means "carries tags"**, not "has ever tagged" — the field is
   reclaimed when the last tag leaves.

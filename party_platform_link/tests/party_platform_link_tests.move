@@ -8,11 +8,8 @@ use partyos::party;
 use party_platform_link::party_platform_link as links;
 use party_social::party_social::{Self as social, XData, InstagramData};
 use platform_link::platform_link as primitive;
-use std::bcs;
-use std::type_name;
 use std::unit_test::{assert_eq, destroy};
 use sui::event;
-use sui::hash::blake2b256;
 use sui::test_scenario::{Self as ts};
 
 const OWNER: address = @0xA;
@@ -36,13 +33,7 @@ fun x_and_instagram_events_keep_distinct_parties_and_types() {
     assert!(x_parent_id != instagram_parent_id);
 
     let x_link = social::x(b"miso".to_string());
-    let x_data = primitive::data(&x_link);
-    let x_bcs = bcs::to_bytes(&x_data);
-    let x_hash = blake2b256(&x_bcs);
     let instagram_link = social::instagram(b"miso.network".to_string());
-    let instagram_data = primitive::data(&instagram_link);
-    let instagram_bcs = bcs::to_bytes(&instagram_data);
-    let instagram_hash = blake2b256(&instagram_bcs);
 
     links::set_link(&mut x_party, &x_cap, x_link);
     links::set_link(&mut instagram_party, &instagram_cap, instagram_link);
@@ -53,26 +44,10 @@ fun x_and_instagram_events_keep_distinct_parties_and_types() {
     assert_eq!(instagram_events.length(), 1);
     assert_eq!(primitive::set_event_parent_id(&x_events[0]), x_parent_id);
     assert_eq!(primitive::set_event_parent_id(&instagram_events[0]), instagram_parent_id);
-    assert_eq!(
-        primitive::set_event_data_type(&x_events[0]),
-        type_name::with_defining_ids<XData>().into_string().into_bytes(),
-    );
-    assert_eq!(
-        primitive::set_event_data_type(&instagram_events[0]),
-        type_name::with_defining_ids<InstagramData>().into_string().into_bytes(),
-    );
     assert!(!primitive::set_event_existed_before(&x_events[0]));
     assert!(!primitive::set_event_existed_before(&instagram_events[0]));
     assert!(primitive::set_event_exists_after(&x_events[0]));
     assert!(primitive::set_event_exists_after(&instagram_events[0]));
-    assert_eq!(primitive::set_event_previous_bcs_length(&x_events[0]), 0);
-    assert_eq!(primitive::set_event_previous_bcs_hash(&x_events[0]), vector[]);
-    assert_eq!(primitive::set_event_previous_bcs_length(&instagram_events[0]), 0);
-    assert_eq!(primitive::set_event_previous_bcs_hash(&instagram_events[0]), vector[]);
-    assert_eq!(primitive::set_event_data_bcs_length(&x_events[0]), x_bcs.length());
-    assert_eq!(primitive::set_event_data_bcs_hash(&x_events[0]), x_hash);
-    assert_eq!(primitive::set_event_data_bcs_length(&instagram_events[0]), instagram_bcs.length());
-    assert_eq!(primitive::set_event_data_bcs_hash(&instagram_events[0]), instagram_hash);
 
     assert_eq!(event::events_by_type<links::LinkSetEvent<XData>>().length(), 0);
     assert_eq!(event::events_by_type<links::LinkSetEvent<InstagramData>>().length(), 0);
@@ -87,16 +62,10 @@ fun x_and_instagram_events_keep_distinct_parties_and_types() {
     assert_eq!(instagram_removed.length(), 1);
     assert_eq!(primitive::removed_event_parent_id(&x_removed[0]), x_parent_id);
     assert_eq!(primitive::removed_event_parent_id(&instagram_removed[0]), instagram_parent_id);
-    assert_eq!(primitive::removed_event_data_type(&x_removed[0]), type_name::with_defining_ids<XData>().into_string().into_bytes());
-    assert_eq!(primitive::removed_event_data_type(&instagram_removed[0]), type_name::with_defining_ids<InstagramData>().into_string().into_bytes());
     assert!(primitive::removed_event_existed_before(&x_removed[0]));
     assert!(primitive::removed_event_existed_before(&instagram_removed[0]));
     assert!(!primitive::removed_event_exists_after(&x_removed[0]));
     assert!(!primitive::removed_event_exists_after(&instagram_removed[0]));
-    assert_eq!(primitive::removed_event_removed_bcs_length(&x_removed[0]), x_bcs.length());
-    assert_eq!(primitive::removed_event_removed_bcs_hash(&x_removed[0]), x_hash);
-    assert_eq!(primitive::removed_event_removed_bcs_length(&instagram_removed[0]), instagram_bcs.length());
-    assert_eq!(primitive::removed_event_removed_bcs_hash(&instagram_removed[0]), instagram_hash);
     assert_eq!(event::events_by_type<links::LinkSetEvent<XData>>().length(), 0);
     assert_eq!(event::events_by_type<links::LinkClearedEvent<XData>>().length(), 0);
 

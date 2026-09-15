@@ -60,11 +60,11 @@ consumer's concern (e.g. `party_platform_link` gates with `PartyAdminCap`).
 
 | Event | When | Payload |
 |---|---|---|
-| `PlatformLinkSetEvent<Data>` | `set` on insert or a changed replacement | `parent_id`, raw defining-ID-qualified `data_type`, existence transition, and previous/new `Data` BCS length plus Blake2b-256 hash; equal replacements emit no event |
-| `PlatformLinkRemovedEvent<Data>` | present `remove` or `clear` | `parent_id`, raw defining-ID-qualified `data_type`, `true`/`false` existence transition, and removed `Data` BCS length plus Blake2b-256 hash |
+| `PlatformLinkSetEvent<Data>` | `set` on insert or a changed replacement | `parent_id`, `existed_before`, `exists_after` (34 BCS bytes); phantom `Data` identifies the slice |
+| `PlatformLinkRemovedEvent<Data>` | present `remove` or `clear` | `parent_id`, `existed_before`, `exists_after` (34 BCS bytes); phantom `Data` identifies the slice |
 
-Absent `clear` is silent. The event's `data_type` is not BCS-wrapped; it is the
-raw bytes of `type_name::with_defining_ids<Data>().into_string()`.
+Absent `clear` is silent. The phantom event type identifies `Data`; no
+payload serialization, hashes, or duplicated type-name bytes are emitted.
 
 ## Errors
 
@@ -91,5 +91,4 @@ or floating dependencies.
 - `PlatformLinkKey<Data>` types are namespaced by the defining package, so
   identically-named payloads in different packages never collide.
 - Index events by their phantom-typed event streams. Re-read the dynamic field
-  when the full payload is needed; event summaries are bounded integrity
-  signals, not a copy of `Data`.
+  when the full payload is needed. Events identify changes without copying `Data`.

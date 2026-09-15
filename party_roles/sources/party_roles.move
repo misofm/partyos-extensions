@@ -13,8 +13,7 @@
 /// Duplicate / not-present / over-max aborts come from `typed_set` with its own
 /// error codes. Gated by the `PartyAdminCap`; views are permissionless.
 /// Mutation events carry the party and cap addresses, a stable kind/name pair,
-/// and before/after counts; a populated clear also carries ordered removed
-/// role snapshots.
+/// and before/after counts; a populated clear carries counts only.
 module party_roles::party_roles;
 
 use partyos::party::{Party, PartyAdminCap};
@@ -87,8 +86,6 @@ public struct RoleRemovedEvent has copy, drop {
 public struct RolesClearedEvent has copy, drop {
     party_id: address,
     admin_cap_id: address,
-    removed_role_kinds: vector<u8>,
-    removed_role_names: vector<vector<u8>>,
     roles_count_before: u64,
     roles_count_after: u64,
 }
@@ -178,14 +175,11 @@ public fun clear_roles(self: &mut Party, cap: &PartyAdminCap) {
     if (set::exists(uid, RolesKey())) {
         let roles = set::keys<RolesKey, ArtistRole>(uid, RolesKey());
         let roles_count_before = roles.length();
-        let (removed_role_kinds, removed_role_names) = role_event_fields(&roles);
         set::clear<RolesKey, ArtistRole>(uid, RolesKey());
         let roles_count_after = set::keys<RolesKey, ArtistRole>(uid, RolesKey()).length();
         emit(RolesClearedEvent {
             party_id,
             admin_cap_id,
-            removed_role_kinds,
-            removed_role_names,
             roles_count_before,
             roles_count_after,
         });
@@ -224,17 +218,6 @@ fun role_kind(self: &ArtistRole): u8 {
         ArtistRole::Collective => 7,
         ArtistRole::Custom(_) => 8,
     }
-}
-
-/// Copies role discriminators and raw names in set insertion order.
-fun role_event_fields(roles: &vector<ArtistRole>): (vector<u8>, vector<vector<u8>>) {
-    let mut kinds = vector[];
-    let mut names = vector[];
-    roles.do_ref!(|role: &ArtistRole| {
-        kinds.push_back(role_kind(role));
-        names.push_back(*role.name().as_bytes());
-    });
-    (kinds, names)
 }
 
 // === Test Functions ===
@@ -289,12 +272,10 @@ public fun role_removed_event_fields(
 #[test_only]
 public fun cleared_event_fields(
     event: &RolesClearedEvent,
-): (address, address, vector<u8>, vector<vector<u8>>, u64, u64) {
+): (address, address, u64, u64) {
     (
         event.party_id,
         event.admin_cap_id,
-        event.removed_role_kinds,
-        event.removed_role_names,
         event.roles_count_before,
         event.roles_count_after,
     )
@@ -304,6 +285,6 @@ public fun cleared_event_fields(
 #[test_only]
 public fun roles_cleared_event_fields(
     event: &RolesClearedEvent,
-): (address, address, vector<u8>, vector<vector<u8>>, u64, u64) {
+): (address, address, u64, u64) {
     cleared_event_fields(event)
 }
