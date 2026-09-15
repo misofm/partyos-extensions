@@ -254,7 +254,7 @@ fun clear_profile_removes_it() {
 fun shared_party_profile_workflow() {
     let mut scenario = ts::begin(OWNER);
     let (p, cap) = new_party(scenario.ctx());
-    party::share(p, &cap);
+    party::share(p, &cap, scenario.ctx());
     transfer::public_transfer(cap, OWNER);
 
     scenario.next_tx(OWNER);
