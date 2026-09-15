@@ -46,7 +46,7 @@ with `EUnauthorized` at `partyos::party`.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_ctas(party, cap, ctas)` | Set or replace the party's ordered CTA list; changed values emit a complete event, equal replacements still write silently | `ETooManyCtas` (4) when the list exceeds 20 |
+| `set_ctas(party, cap, ctas)` | Set or replace the party's ordered CTA list; changed values emit counts and provenance, equal replacements still write silently | `ETooManyCtas` (4) when the list exceeds 20 |
 | `clear_ctas(party, cap)` | Remove the party's CTA list | — (no-op when none is set) |
 
 ### Views
@@ -64,8 +64,8 @@ replacements still write the list but are silent, and an absent clear is silent.
 
 | Event | When | Payload |
 |---|---|---|
-| `CtasSetEvent` | `set_ctas` changes the list (set, replace, or empty initial attachment) | `party_id`, `admin_cap_id`, `existed_before`, `previous_count`, `count`, complete `previous_labels`/`previous_urls`, and complete resulting `labels`/`urls`; equal replacements emit no event |
-| `CtasClearedEvent` | `clear_ctas` removes an existing list — not emitted on a no-op clear | `party_id`, `admin_cap_id`, `previous_count`, and complete removed `previous_labels`/`previous_urls` |
+| `CtasSetEvent` | `set_ctas` changes the list (set, replace, or empty initial attachment) | `party_id`, `admin_cap_id`, `existed_before`, `previous_count`, `count` |
+| `CtasClearedEvent` | `clear_ctas` removes an existing list — not emitted on a no-op clear | `party_id`, `admin_cap_id`, `previous_count` |
 
 ## Errors
 
@@ -99,9 +99,9 @@ A wrong `PartyAdminCap` aborts with `EUnauthorized` (0) at
 - **Order is the payload.** Render in stored order; do not re-sort. There are
   no per-entry ids, so entry identity does not survive a rewrite — diff by
   position, not by id.
-- **Event payloads are self-contained.** Set and clear events carry complete
-  ordered byte snapshots, so an indexer can reconcile the mutation without a
-  dynamic-field read. `party_id` and `admin_cap_id` are primitive addresses.
+- **Events are compact change signals.** Set events are 81 BCS bytes and
+  clear events are 72 bytes regardless of content length. Read `ctas()` when
+  labels and URLs are needed. Both events retain party and authorizing cap IDs.
 - **Empty vs. absent.** `set_ctas` with an empty vector stores an empty list
   (`CtasSetEvent` with `existed_before = false` and `count = 0` on first set);
   replacing that stored empty list performs the write silently because the

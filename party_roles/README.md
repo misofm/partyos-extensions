@@ -54,15 +54,15 @@ with `EUnauthorized` at `partyos::party`.
 
 | Event | When | Payload |
 |---|---|---|
-| `RoleAddedEvent` | `add_role` | `party_id`, `admin_cap_id`, stable `role_kind` (`Artist` 0 through `Custom` 8), raw UTF-8 `role_name`, and `roles_count_before`/`roles_count_after` |
-| `RoleRemovedEvent` | `remove_role` | `party_id`, `admin_cap_id`, stable `role_kind`, raw UTF-8 `role_name`, and `roles_count_before`/`roles_count_after` |
-| `RolesClearedEvent` | `clear_roles`, only when a set existed | `party_id`, `admin_cap_id`, ordered `removed_role_kinds`, ordered raw `removed_role_names`, and `roles_count_before`/`roles_count_after` |
+| `RoleAddedEvent` | `add_role` | `party_id`, `admin_cap_id`, `role_kind`, `role_name`, `roles_count_before`, `roles_count_after` |
+| `RoleRemovedEvent` | `remove_role` | `party_id`, `admin_cap_id`, `role_kind`, `role_name`, `roles_count_before`, `roles_count_after` |
+| `RolesClearedEvent` | `clear_roles`, only when a set existed | `party_id`, `admin_cap_id`, `roles_count_before`, `roles_count_after` |
 
 `role_kind` is a private event discriminator: Artist 0, Producer 1, Dj 2,
 Composer 3, Songwriter 4, Band 5, Label 6, Collective 7, and Custom 8.
 The kind/name pair deliberately distinguishes canonical `Artist` from
 `Custom("Artist")`. A populated clear emits one event; an absent clear is
-authorized but silent. Event snapshots preserve set insertion order.
+authorized but silent. Clear events carry counts rather than whole role lists.
 
 ## Errors
 
@@ -102,6 +102,6 @@ Both are exact Git pins; this manifest has no local-path dependencies.
   with `Artist`, and the two can be held at once.
 - Add and remove events carry the stable kind/name pair, `party_id`,
   `admin_cap_id`, and before/after counts, so an indexer can track them
-  without re-reading. `RolesClearedEvent` carries paired ordered kind/name
-  snapshots plus counts ending at zero, so no re-read is needed on clear.
+  without re-reading. `RolesClearedEvent` carries
+  counts ending at zero, so no re-read is needed on clear.
 - `roles()` returns roles in insertion order.

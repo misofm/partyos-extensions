@@ -12,9 +12,8 @@ Storage mechanics come entirely from `platform_link`; this module adds only
 the party-specific cap gate and views. Writes are gated by the
 `PartyAdminCap` through `party::uid_mut(cap)`; views are permissionless. The
 primitive emits the authoritative rich event for each insertion, changed
-replacement, or present clear, including the parent address,
-defining-ID-qualified `Data` type, existence transition, and bounded BCS
-summaries. Equal replacements still perform the underlying write but emit no
+replacement, or present clear, including the parent address and existence transition.
+The phantom `Data` type identifies the slice. Equal replacements still perform the underlying write but emit no
 event. The legacy wrapper event types remain public for compatibility but are
 inert and never emitted.
 
@@ -58,14 +57,13 @@ with `EUnauthorized` at `partyos::party`.
 
 | Event | When | Payload |
 |---|---|---|
-| `PlatformLinkSetEvent<phantom Data>` | Successful insertion or changed replacement; emitted by `platform_link` | `parent_id`, raw defining-ID-qualified `data_type`, existence transition, previous/new `Data` BCS lengths and Blake2b-256 hashes |
-| `PlatformLinkRemovedEvent<phantom Data>` | Every successful present `clear_link`; emitted by `platform_link` | `parent_id`, raw defining-ID-qualified `data_type`, `true`/`false` existence transition, removed `Data` BCS length and Blake2b-256 hash |
+| `PlatformLinkSetEvent<phantom Data>` | Successful insertion or changed replacement; emitted by `platform_link` | `parent_id`, `existed_before`, `exists_after` (34 BCS bytes); phantom `Data` identifies the slice |
+| `PlatformLinkRemovedEvent<phantom Data>` | Every successful present `clear_link`; emitted by `platform_link` | `parent_id`, `existed_before`, `exists_after` (34 BCS bytes); phantom `Data` identifies the slice |
 | `LinkSetEvent<phantom Data>` | Legacy compatibility declaration | none — inert; never emitted |
 | `LinkClearedEvent<phantom Data>` | Legacy compatibility declaration | none — inert; never emitted |
 
 The phantom `Data` type parameter identifies the platform that changed. The
-primitive hashes and length-bounds payload summaries rather than putting
-unbounded payload bytes in events; clients should re-read with `link<Data>`.
+primitive emits only the parent ID and existence flags.
 
 ## Errors
 

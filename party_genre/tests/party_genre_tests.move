@@ -85,8 +85,8 @@ fun assert_added_events(id1: ID, id2: ID, id3: ID, party_id: address, admin_cap_
     assert_eq!(event_cap_id, admin_cap_id);
     assert_eq!(event_genre_id, id1.to_address());
     assert_eq!(event_name, b"HIP_HOP");
-    assert_eq!(before, vector[]);
-    assert_eq!(after, vector[id1.to_address()]);
+    assert_eq!(before, 0);
+    assert_eq!(after, 1);
     assert_eq!(max, MAX_GENRES);
 
     let (event_party_id, event_cap_id, event_genre_id, event_name, before, after, max) =
@@ -95,8 +95,8 @@ fun assert_added_events(id1: ID, id2: ID, id3: ID, party_id: address, admin_cap_
     assert_eq!(event_cap_id, admin_cap_id);
     assert_eq!(event_genre_id, id2.to_address());
     assert_eq!(event_name, b"AMBIENT");
-    assert_eq!(before, vector[id1.to_address()]);
-    assert_eq!(after, vector[id1.to_address(), id2.to_address()]);
+    assert_eq!(before, 1);
+    assert_eq!(after, 2);
     assert_eq!(max, MAX_GENRES);
 
     let (event_party_id, event_cap_id, event_genre_id, event_name, before, after, max) =
@@ -105,12 +105,12 @@ fun assert_added_events(id1: ID, id2: ID, id3: ID, party_id: address, admin_cap_
     assert_eq!(event_cap_id, admin_cap_id);
     assert_eq!(event_genre_id, id3.to_address());
     assert_eq!(event_name, b"TECHNO");
-    assert_eq!(before, vector[id1.to_address(), id2.to_address()]);
-    assert_eq!(after, vector[id1.to_address(), id2.to_address(), id3.to_address()]);
+    assert_eq!(before, 2);
+    assert_eq!(after, 3);
     assert_eq!(max, MAX_GENRES);
 }
 
-fun assert_middle_removed_event(id1: ID, id2: ID, id3: ID, party_id: address, admin_cap_id: address) {
+fun assert_middle_removed_event(_id1: ID, id2: ID, _id3: ID, party_id: address, admin_cap_id: address) {
     let removed = event::events_by_type<pg::GenreRemovedEvent>();
     assert_eq!(removed.length(), 1);
     let (event_party_id, event_cap_id, event_genre_id, before, after) =
@@ -118,8 +118,8 @@ fun assert_middle_removed_event(id1: ID, id2: ID, id3: ID, party_id: address, ad
     assert_eq!(event_party_id, party_id);
     assert_eq!(event_cap_id, admin_cap_id);
     assert_eq!(event_genre_id, id2.to_address());
-    assert_eq!(before, vector[id1.to_address(), id2.to_address(), id3.to_address()]);
-    assert_eq!(after, vector[id1.to_address(), id3.to_address()]);
+    assert_eq!(before, 3);
+    assert_eq!(after, 2);
 }
 
 fun assert_final_removed_event(id3: ID, party_id: address, admin_cap_id: address) {
@@ -130,8 +130,8 @@ fun assert_final_removed_event(id3: ID, party_id: address, admin_cap_id: address
     assert_eq!(event_party_id, party_id);
     assert_eq!(event_cap_id, admin_cap_id);
     assert_eq!(event_genre_id, id3.to_address());
-    assert_eq!(before, vector[id3.to_address()]);
-    assert_eq!(after, vector[]);
+    assert_eq!(before, 1);
+    assert_eq!(after, 0);
 }
 
 fun assert_added_event_at(
@@ -152,8 +152,8 @@ fun assert_added_event_at(
     assert_eq!(event_cap_id, admin_cap_id);
     assert_eq!(event_genre_id, genre_id.to_address());
     assert_eq!(event_name, genre_name);
-    assert_eq!(before, expected_before);
-    assert_eq!(after, expected_after);
+    assert_eq!(before, expected_before.length());
+    assert_eq!(after, expected_after.length());
     assert_eq!(max, MAX_GENRES);
 }
 
@@ -166,12 +166,13 @@ fun assert_cleared_event_at(
 ) {
     let cleared = event::events_by_type<pg::GenresClearedEvent>();
     assert_eq!(cleared.length(), expected_count);
-    let (event_party_id, event_cap_id, before, after) =
+    let (event_party_id, event_cap_id, before, after, removed_ids) =
         pg::cleared_event_fields(&cleared[event_index]);
+    assert_eq!(removed_ids, expected_before);
     assert_eq!(event_party_id, party_id);
     assert_eq!(event_cap_id, admin_cap_id);
-    assert_eq!(before, expected_before);
-    assert_eq!(after, vector[]);
+    assert_eq!(before, expected_before.length());
+    assert_eq!(after, 0);
 }
 
 fun assert_full_add_events(ids: &vector<ID>, party_id: address, admin_cap_id: address) {
@@ -192,8 +193,8 @@ fun assert_full_add_events(ids: &vector<ID>, party_id: address, admin_cap_id: ad
         assert_eq!(event_cap_id, admin_cap_id);
         assert_eq!(event_genre_id, genre_id.to_address());
         assert_eq!(event_name, expected_name);
-        assert_eq!(before, expected_before);
-        assert_eq!(after, expected_after);
+        assert_eq!(before, expected_before.length());
+        assert_eq!(after, expected_after.length());
         assert_eq!(max, MAX_GENRES);
         expected_before.push_back(genre_id.to_address());
     });
@@ -368,8 +369,8 @@ fun shared_party_genre_workflow() {
     assert_eq!(event_cap_id, object::id(&cap).to_address());
     assert_eq!(event_genre_id, genre_id.to_address());
     assert_eq!(event_name, b"HOUSE");
-    assert_eq!(before, vector[]);
-    assert_eq!(after, vector[genre_id.to_address()]);
+    assert_eq!(before, 0);
+    assert_eq!(after, 1);
     assert_eq!(max, MAX_GENRES);
     ts::return_immutable(genre);
     ts::return_shared(p);

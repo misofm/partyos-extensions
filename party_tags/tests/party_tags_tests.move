@@ -206,7 +206,7 @@ fun mutation_events_snapshot_counts_and_final_reclaim_without_clear_event() {
 }
 
 #[test]
-fun clear_event_snapshots_order_and_absent_repeat_is_silent() {
+fun clear_event_reports_counts_and_absent_repeat_is_silent() {
     let ctx = &mut tx_context::dummy();
     let (mut p, cap) = new_party(ctx);
     let party_id = object::id(&p).to_address();
@@ -219,11 +219,10 @@ fun clear_event_snapshots_order_and_absent_repeat_is_silent() {
 
     let cleared = event::events_by_type<tags::TagsClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    let (event_party_id, event_cap_id, removed_tags, before, after) =
+    let (event_party_id, event_cap_id, before, after) =
         tags::cleared_event_fields(&cleared[0]);
     assert_eq!(event_party_id, party_id);
     assert_eq!(event_cap_id, admin_cap_id);
-    assert_eq!(removed_tags, vector[b"Ambient", b" ambient ", vector[99, 97, 102, 0xc3, 0xa9]]);
     assert_eq!(before, 3);
     assert_eq!(after, 0);
     assert!(!tags::has_tags(&p));
@@ -255,9 +254,8 @@ fun thirty_max_length_tags_have_expected_event_bcs_sizes() {
     tags::clear_tags(&mut p, &cap);
     let cleared = event::events_by_type<tags::TagsClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(bcs::to_bytes(&cleared[0]).length(), 1611);
-    let (_, _, removed_tags, before, after) = tags::cleared_event_fields(&cleared[0]);
-    assert_eq!(removed_tags, expected_tags);
+    assert_eq!(bcs::to_bytes(&cleared[0]).length(), 80);
+    let (_, _, before, after) = tags::cleared_event_fields(&cleared[0]);
     assert_eq!(before, 30);
     assert_eq!(after, 0);
     destroy(p);

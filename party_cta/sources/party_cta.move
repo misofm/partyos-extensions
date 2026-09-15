@@ -13,16 +13,15 @@
 /// written at once (`set_ctas`) — the natural fit for a drag-to-reorder editor
 /// that saves on submit — so there are no per-entry ids to track. Gated by the
 /// `PartyAdminCap`; views are permissionless. Each changed write emits one
-/// self-contained event with the authorizing cap address and complete ordered
-/// prior/resulting label and URL bytes; an absent clear is silent. Equal
-/// replacements still perform the write but do not emit a change event.
+/// compact event with the authorizing cap address and prior/resulting counts;
+/// an absent clear is silent. Equal replacements still perform the write but
+/// do not emit a change event.
 module party_cta::party_cta;
 
 use partyos::party::{Party, PartyAdminCap};
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
-use sui::object::UID;
 
 // === Errors ===
 
@@ -61,29 +60,22 @@ public struct Cta has copy, drop, store {
 
 // === Events ===
 
-/// Emitted when a party's CTA list is set or replaced. The payload includes
-/// both the complete prior and resulting ordered lists so consumers can
-/// reconcile a replacement from the event alone.
+/// Emitted when a party's CTA list is set or replaced. Counts describe the
+/// change; consumers read the field for ordered labels and URLs.
 public struct CtasSetEvent has copy, drop {
     party_id: address,
     admin_cap_id: address,
     existed_before: bool,
     previous_count: u64,
     count: u64,
-    previous_labels: vector<vector<u8>>,
-    previous_urls: vector<vector<u8>>,
-    labels: vector<vector<u8>>,
-    urls: vector<vector<u8>>,
 }
 
-/// Emitted when a party's CTA list is cleared. It carries the complete ordered
-/// list that was removed; no event is emitted when the list was absent.
+/// Emitted when a party's CTA list is cleared, carrying the removed count.
+/// No event is emitted when the list was absent.
 public struct CtasClearedEvent has copy, drop {
     party_id: address,
     admin_cap_id: address,
     previous_count: u64,
-    previous_labels: vector<vector<u8>>,
-    previous_urls: vector<vector<u8>>,
 }
 
 // === Constructor / accessors ===
@@ -123,8 +115,9 @@ public fun set_ctas(self: &mut Party, cap: &PartyAdminCap, ctas: vector<Cta>) {
     let uid = self.uid_mut(cap);
 
     let existed_before = df::exists(uid, CtasKey());
-    let (previous_count, previous_labels, previous_urls) = previous_cta_bytes(uid, existed_before);
-    let (labels, urls) = cta_bytes(&ctas);
+    let previous_count = if (existed_before) {
+        df::borrow<CtasKey, vector<Cta>>(uid, CtasKey()).length()
+    } else { 0 };
     let value_changed = if (existed_before) {
         *df::borrow(uid, CtasKey()) != ctas
     } else {
@@ -143,17 +136,13 @@ public fun set_ctas(self: &mut Party, cap: &PartyAdminCap, ctas: vector<Cta>) {
             existed_before,
             previous_count,
             count,
-            previous_labels,
-            previous_urls,
-            labels,
-            urls,
         });
     };
 }
 
 /// Removes the party's CTA list. Authorization happens before checking
 /// existence; an absent list is a silent no-op, while an existing list emits
-/// exactly one event containing the complete removed payload.
+/// exactly one event containing the removed count.
 public fun clear_ctas(self: &mut Party, cap: &PartyAdminCap) {
     let party_id = object::id(self).to_address();
     let admin_cap_id = object::id(cap).to_address();
@@ -161,13 +150,10 @@ public fun clear_ctas(self: &mut Party, cap: &PartyAdminCap) {
     if (df::exists(uid, CtasKey())) {
         let previous: vector<Cta> = df::remove(uid, CtasKey());
         let previous_count = previous.length();
-        let (previous_labels, previous_urls) = cta_bytes(&previous);
         emit(CtasClearedEvent {
             party_id,
             admin_cap_id,
             previous_count,
-            previous_labels,
-            previous_urls,
         });
     }
 }
@@ -185,50 +171,19 @@ public fun ctas(self: &Party): vector<Cta> {
     *df::borrow<CtasKey, vector<Cta>>(self.uid(), CtasKey())
 }
 
-// === Private Functions ===
-
-/// Copies CTA labels and URLs to primitive byte vectors in their original
-/// order. This is intentionally pure: it performs no dynamic-field access and
-/// emits no events.
-fun cta_bytes(ctas: &vector<Cta>): (vector<vector<u8>>, vector<vector<u8>>) {
-    let mut labels = vector[];
-    let mut urls = vector[];
-    ctas.do_ref!(|cta| {
-        labels.push_back(*cta.label.as_bytes());
-        urls.push_back(*cta.url.as_bytes());
-    });
-    (labels, urls)
-}
-
-/// Returns a byte snapshot of the existing field, or empty vectors when no
-/// field is attached. Kept separate because Move `if` is statement-only.
-fun previous_cta_bytes(
-    uid: &UID,
-    existed_before: bool,
-): (u64, vector<vector<u8>>, vector<vector<u8>>) {
-    if (!existed_before) return (0, vector[], vector[]);
-    let previous = df::borrow(uid, CtasKey());
-    let (labels, urls) = cta_bytes(previous);
-    (previous.length(), labels, urls)
-}
-
 // === Test Functions ===
 
 /// Test-only accessor for every `CtasSetEvent` field, in declaration order.
 #[test_only]
 public fun set_event_fields(
     event: &CtasSetEvent,
-): (address, address, bool, u64, u64, vector<vector<u8>>, vector<vector<u8>>, vector<vector<u8>>, vector<vector<u8>>) {
+): (address, address, bool, u64, u64) {
     (
         event.party_id,
         event.admin_cap_id,
         event.existed_before,
         event.previous_count,
         event.count,
-        event.previous_labels,
-        event.previous_urls,
-        event.labels,
-        event.urls,
     )
 }
 
@@ -236,12 +191,10 @@ public fun set_event_fields(
 #[test_only]
 public fun cleared_event_fields(
     event: &CtasClearedEvent,
-): (address, address, u64, vector<vector<u8>>, vector<vector<u8>>) {
+): (address, address, u64) {
     (
         event.party_id,
         event.admin_cap_id,
         event.previous_count,
-        event.previous_labels,
-        event.previous_urls,
     )
 }

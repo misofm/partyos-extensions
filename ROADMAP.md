@@ -30,7 +30,9 @@ platform values only; `party_platform_link` supplies their cap-gated storage.
 6. **Change events describe state changes.** Setters still validate, authorize,
    and perform equal-value replacements, but suppress a redundant event. An
    initial attachment, including an explicitly empty value, remains eventful;
-   clearing an absent value is silent.
+   clearing an absent value is silent. Event payloads omit bios, URLs, CTA
+   lists, and bulk role/tag text; compact codes, counts, and bounded relationship
+   IDs retain useful context. See [EVENT_PAYLOADS.md](EVENT_PAYLOADS.md).
 
 ## Where each field lives
 

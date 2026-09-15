@@ -69,7 +69,8 @@ current custody-agnostic inbox and accumulator Actions live in
 
 ## Conventions
 
-- **Events are change signals.** Dynamic-field mutations are not observable
+- **Events are change signals.** See [EVENT_PAYLOADS.md](EVENT_PAYLOADS.md) for
+  the complete event inventory and serialized payload bounds. Dynamic-field mutations are not observable
   off-chain, so every write emits an event carrying `party_id`. Payloads are
   not re-included — an indexer re-reads the field — except small, stable ones
   (ids and short display strings: `party_media`'s quilt id and role/tag

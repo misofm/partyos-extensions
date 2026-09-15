@@ -23,11 +23,8 @@
 /// and a new platform can be added to a record without touching the others.
 module platform_link::platform_link;
 
-use std::type_name;
-use sui::bcs;
 use sui::dynamic_field as df;
 use sui::event::emit;
-use sui::hash::blake2b256;
 
 // === Errors ===
 
@@ -62,45 +59,20 @@ public struct PlatformLink<Data: copy + drop + store> has copy, drop, store {
 /// `phantom Data` gives each platform its own field.
 public struct PlatformLinkKey<phantom Data>() has copy, drop, store;
 
-/// Emitted when a platform link is inserted or replaced. The payload is kept
-/// bounded: only the BCS length and Blake2b-256 digest of `Data` are included.
-/// `data_type` is the raw bytes of the defining-ID-qualified type name.
+/// Emitted when a platform link is inserted or replaced. The phantom Data
+/// type identifies the slice; the payload contains only parent and existence.
 public struct PlatformLinkSetEvent<phantom Data> has copy, drop {
     parent_id: address,
-    data_type: vector<u8>,
     existed_before: bool,
     exists_after: bool,
-    previous_bcs_length: u64,
-    previous_bcs_hash: vector<u8>,
-    data_bcs_length: u64,
-    data_bcs_hash: vector<u8>,
 }
 
-/// Emitted when a platform link is removed. The removed payload is represented
-/// by its BCS length and Blake2b-256 digest, never by unbounded payload bytes.
-/// `data_type` is the raw bytes of the defining-ID-qualified type name.
+/// Emitted when a platform link is removed. The phantom Data type identifies
+/// the slice; no payload serialization or hashing is performed for events.
 public struct PlatformLinkRemovedEvent<phantom Data> has copy, drop {
     parent_id: address,
-    data_type: vector<u8>,
     existed_before: bool,
     exists_after: bool,
-    removed_bcs_length: u64,
-    removed_bcs_hash: vector<u8>,
-}
-
-// === Event helpers ===
-
-/// Returns a bounded summary of `data`'s canonical BCS representation.
-fun summarize<Data: copy + drop + store>(data: &Data): (u64, vector<u8>) {
-    let bytes = bcs::to_bytes(data);
-    let length = bytes.length();
-    let hash = blake2b256(&bytes);
-    (length, hash)
-}
-
-/// Returns the defining-ID-qualified type name as raw bytes for event payloads.
-fun data_type<Data>(): vector<u8> {
-    type_name::with_defining_ids<Data>().into_string().into_bytes()
 }
 
 // === Constructor / accessor ===
@@ -127,44 +99,27 @@ public fun exists_<Data: copy + drop + store>(uid: &UID): bool {
 }
 
 /// Sets the `PlatformLink<Data>` under `uid`, replacing any existing one.
-/// Emits `PlatformLinkSetEvent<Data>` with bounded summaries of the previous
-/// and new payloads only when the complete `Data` value changes. Equal
+/// Emits `PlatformLinkSetEvent<Data>` with the existence transition
+/// only when the complete `Data` value changes. Equal
 /// replacements still write the new value but do not emit.
 public fun set<Data: copy + drop + store>(uid: &mut UID, link: PlatformLink<Data>) {
     if (df::exists(uid, PlatformLinkKey<Data>())) {
-        let (previous_bcs_length, previous_bcs_hash) =
-            summarize(&df::borrow<PlatformLinkKey<Data>, PlatformLink<Data>>(
-                uid,
-                PlatformLinkKey<Data>(),
-            ).data);
-        let (data_bcs_length, data_bcs_hash) = summarize(&link.data);
         let previous: &PlatformLink<Data> = df::borrow(uid, PlatformLinkKey<Data>());
         let value_changed = previous.data != link.data;
         *df::borrow_mut(uid, PlatformLinkKey<Data>()) = link;
         if (value_changed) {
             emit(PlatformLinkSetEvent<Data> {
                 parent_id: uid.to_address(),
-                data_type: data_type<Data>(),
                 existed_before: true,
                 exists_after: true,
-                previous_bcs_length,
-                previous_bcs_hash,
-                data_bcs_length,
-                data_bcs_hash,
             });
         };
     } else {
-        let (data_bcs_length, data_bcs_hash) = summarize(&link.data);
         df::add(uid, PlatformLinkKey<Data>(), link);
         emit(PlatformLinkSetEvent<Data> {
             parent_id: uid.to_address(),
-            data_type: data_type<Data>(),
             existed_before: false,
             exists_after: true,
-            previous_bcs_length: 0,
-            previous_bcs_hash: vector[],
-            data_bcs_length,
-            data_bcs_hash,
         });
     }
 }
@@ -189,14 +144,10 @@ public fun borrow<Data: copy + drop + store>(uid: &UID): &PlatformLink<Data> {
 public fun remove<Data: copy + drop + store>(uid: &mut UID): PlatformLink<Data> {
     assert!(df::exists(uid, PlatformLinkKey<Data>()), ENoLink);
     let link: PlatformLink<Data> = df::remove(uid, PlatformLinkKey<Data>());
-    let (removed_bcs_length, removed_bcs_hash) = summarize(&link.data);
     emit(PlatformLinkRemovedEvent<Data> {
         parent_id: uid.to_address(),
-        data_type: data_type<Data>(),
         existed_before: true,
         exists_after: false,
-        removed_bcs_length,
-        removed_bcs_hash,
     });
     link
 }
@@ -204,15 +155,11 @@ public fun remove<Data: copy + drop + store>(uid: &mut UID): PlatformLink<Data> 
 /// Removes the stored link if present, discarding it. No-op if absent.
 public fun clear<Data: copy + drop + store>(uid: &mut UID) {
     if (df::exists(uid, PlatformLinkKey<Data>())) {
-        let link: PlatformLink<Data> = df::remove(uid, PlatformLinkKey<Data>());
-        let (removed_bcs_length, removed_bcs_hash) = summarize(&link.data);
+        let _: PlatformLink<Data> = df::remove(uid, PlatformLinkKey<Data>());
         emit(PlatformLinkRemovedEvent<Data> {
             parent_id: uid.to_address(),
-            data_type: data_type<Data>(),
             existed_before: true,
             exists_after: false,
-            removed_bcs_length,
-            removed_bcs_hash,
         });
     }
 }
@@ -223,12 +170,6 @@ public fun clear<Data: copy + drop + store>(uid: &mut UID) {
 #[test_only]
 public fun set_event_parent_id<Data>(event: &PlatformLinkSetEvent<Data>): address {
     event.parent_id
-}
-
-/// Reads `data_type` from a set event in tests.
-#[test_only]
-public fun set_event_data_type<Data>(event: &PlatformLinkSetEvent<Data>): vector<u8> {
-    event.data_type
 }
 
 /// Reads `existed_before` from a set event in tests.
@@ -243,40 +184,10 @@ public fun set_event_exists_after<Data>(event: &PlatformLinkSetEvent<Data>): boo
     event.exists_after
 }
 
-/// Reads `previous_bcs_length` from a set event in tests.
-#[test_only]
-public fun set_event_previous_bcs_length<Data>(event: &PlatformLinkSetEvent<Data>): u64 {
-    event.previous_bcs_length
-}
-
-/// Reads `previous_bcs_hash` from a set event in tests.
-#[test_only]
-public fun set_event_previous_bcs_hash<Data>(event: &PlatformLinkSetEvent<Data>): vector<u8> {
-    event.previous_bcs_hash
-}
-
-/// Reads `data_bcs_length` from a set event in tests.
-#[test_only]
-public fun set_event_data_bcs_length<Data>(event: &PlatformLinkSetEvent<Data>): u64 {
-    event.data_bcs_length
-}
-
-/// Reads `data_bcs_hash` from a set event in tests.
-#[test_only]
-public fun set_event_data_bcs_hash<Data>(event: &PlatformLinkSetEvent<Data>): vector<u8> {
-    event.data_bcs_hash
-}
-
 /// Reads `parent_id` from a removed event in tests.
 #[test_only]
 public fun removed_event_parent_id<Data>(event: &PlatformLinkRemovedEvent<Data>): address {
     event.parent_id
-}
-
-/// Reads `data_type` from a removed event in tests.
-#[test_only]
-public fun removed_event_data_type<Data>(event: &PlatformLinkRemovedEvent<Data>): vector<u8> {
-    event.data_type
 }
 
 /// Reads `existed_before` from a removed event in tests.
@@ -289,16 +200,4 @@ public fun removed_event_existed_before<Data>(event: &PlatformLinkRemovedEvent<D
 #[test_only]
 public fun removed_event_exists_after<Data>(event: &PlatformLinkRemovedEvent<Data>): bool {
     event.exists_after
-}
-
-/// Reads `removed_bcs_length` from a removed event in tests.
-#[test_only]
-public fun removed_event_removed_bcs_length<Data>(event: &PlatformLinkRemovedEvent<Data>): u64 {
-    event.removed_bcs_length
-}
-
-/// Reads `removed_bcs_hash` from a removed event in tests.
-#[test_only]
-public fun removed_event_removed_bcs_hash<Data>(event: &PlatformLinkRemovedEvent<Data>): vector<u8> {
-    event.removed_bcs_hash
 }
