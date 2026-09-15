@@ -19,7 +19,7 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.mainnet.party_platform_link]
 source = { root = true }
 use_environment = "mainnet"
-manifest_digest = "6AD49CFB511DB0BBBD763B27ECD0D4DB4A190DB22DB05941006B9DEB05783405"
+manifest_digest = "B82FD10E31C7E775EE383739053B60BE2C943CDB9EF621A618D31C052D7CC150"
 deps = { party_social = "party_social", partyos = "partyos", platform_link = "platform_link", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.party_social]
@@ -29,7 +29,7 @@ manifest_digest = "F0DA08AE387127C5CF09D837DED0F01554E258A2E31688EE9E07F6D240B78
 deps = { platform_link = "platform_link", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.partyos]
-source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "c23df9018e15a76395c65bc8dfca4b365140aa12" }
+source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "6dfc6937b996da1a953ee6818d8a03206a23a936" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -55,7 +55,7 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.testnet.party_platform_link]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "72DDBA1D0B5189C459171C31CD2580CEC0F61B72C457B1EC1EB9118D6E63FD41"
+manifest_digest = "8ECC91CBFB3E73820BBDE3D8335DD12314035565C27F02942AE94DC5C7EC94DD"
 deps = { party_social = "party_social", partyos = "partyos", platform_link = "platform_link", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.party_social]
@@ -65,7 +65,7 @@ manifest_digest = "F73102659DC343F1BB8645F9E8E00503A4F9ED6A024C297E99ADD9135188E
 deps = { platform_link = "platform_link", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.partyos]
-source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "c23df9018e15a76395c65bc8dfca4b365140aa12" }
+source = { git = "https://github.com/misofm/partyos.git", subdir = ".", rev = "6dfc6937b996da1a953ee6818d8a03206a23a936" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }

@@ -68,7 +68,7 @@ fun add_remove_and_query() {
 fun shared_party_tags_workflow() {
     let mut scenario = ts::begin(OWNER);
     let (p, cap) = new_party(scenario.ctx());
-    party::share(p, &cap);
+    party::share(p, &cap, scenario.ctx());
     transfer::public_transfer(cap, OWNER);
 
     scenario.next_tx(OWNER);
@@ -292,7 +292,7 @@ fun transferred_cap_identity_is_emitted() {
     let (p, cap) = new_party(scenario.ctx());
     let party_id = object::id(&p).to_address();
     let admin_cap_id = object::id(&cap).to_address();
-    party::share(p, &cap);
+    party::share(p, &cap, scenario.ctx());
     transfer::public_transfer(cap, OWNER);
 
     scenario.next_tx(OWNER);

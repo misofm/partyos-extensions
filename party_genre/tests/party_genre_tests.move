@@ -352,7 +352,7 @@ fun shared_party_genre_workflow() {
 
     scenario.next_tx(CREATOR);
     let (p, cap) = new_party(scenario.ctx());
-    party::share(p, &cap);
+    party::share(p, &cap, scenario.ctx());
     transfer::public_transfer(cap, CREATOR);
 
     scenario.next_tx(CREATOR);

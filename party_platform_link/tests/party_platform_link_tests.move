@@ -111,7 +111,7 @@ fun shared_party_cap_holder_and_reader() {
     let mut scenario = ts::begin(OWNER);
     let (p, cap) = new_party(scenario.ctx());
     let parent_id = object::id(&p).to_address();
-    party::share(p, &cap);
+    party::share(p, &cap, scenario.ctx());
     transfer::public_transfer(cap, OWNER);
 
     scenario.next_tx(OWNER);
