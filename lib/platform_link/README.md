@@ -5,10 +5,10 @@ streaming service, a social network, any site), stored as a dynamic field on
 any object's `UID`. Protocol-agnostic by design: it knows nothing about
 platforms or consumers, so anything in the ecosystem can depend on it.
 Consumers never re-implement link storage — they define a `Data` payload type
-and get one independent link field per platform, keyed by type. Every mutation
-emits a typed, bounded change event: payloads are represented only by their
-canonical BCS length and Blake2b-256 digest, while the defining-ID-qualified
-data type is included as raw bytes.
+and get one independent link field per platform, keyed by type. Every actual
+change emits a typed, bounded event containing only the parent ID and existence
+transition. The event's phantom `Data` parameter carries the defining-package
+type identity without duplicating type-name bytes in the payload.
 
 URLs are never stored: the client rebuilds the public URL from the `Data` it
 reads back, so a platform reshaping its URLs needs no on-chain change.

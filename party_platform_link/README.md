@@ -80,7 +80,7 @@ payload packages, before `set_link` is ever called.
 ## Dependencies
 
 - [`partyos`](https://github.com/misofm/partyos) at exact revision
-  `c23df9018e15a76395c65bc8dfca4b365140aa12` — `Party` authorization. This
+  `a55f9a2ae9d782d453305961862789dce9deef5b` — `Party` authorization. This
   is the manifest's only Git pin.
 - [`platform_link`](../lib/platform_link) — a local-path sibling package
   (`platform_link = { local = "../lib/platform_link" }`) — all storage

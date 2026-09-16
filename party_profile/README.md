@@ -73,7 +73,7 @@ wrong cap.
 ## Dependencies
 
 - [`partyos`](https://github.com/misofm/partyos) at
-  `c23df9018e15a76395c65bc8dfca4b365140aa12` — the `Party` authorization
+  `a55f9a2ae9d782d453305961862789dce9deef5b` — the `Party` authorization
   core.
 - [`country_code`](https://github.com/unconfirmedlabs/country_code) at
   `b4c92cb7f772879335344d7b6499b5fa4eafef56` — validated `CountryCode`.
