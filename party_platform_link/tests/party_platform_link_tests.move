@@ -33,7 +33,7 @@ fun x_and_instagram_events_keep_distinct_parties_and_types() {
     assert!(x_parent_id != instagram_parent_id);
 
     let x_link = social::x(b"miso".to_string());
-    let instagram_link = social::instagram(b"miso.network".to_string());
+    let instagram_link = social::instagram(b"miso.fm".to_string());
 
     links::set_link(&mut x_party, &x_cap, x_link);
     links::set_link(&mut instagram_party, &instagram_cap, instagram_link);

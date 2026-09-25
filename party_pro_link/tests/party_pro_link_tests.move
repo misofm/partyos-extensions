@@ -10,7 +10,7 @@ use sui::event;
 
 #[test]
 fun url_based_constructors() {
-    assert_eq!(pro::website(b"https://miso.network".to_string()).data().url(), b"https://miso.network".to_string());
+    assert_eq!(pro::website(b"https://miso.fm".to_string()).data().url(), b"https://miso.fm".to_string());
     assert_eq!(pro::booking_page(b"https://book.example".to_string()).data().url(), b"https://book.example".to_string());
     assert_eq!(pro::management_page(b"https://management.example".to_string()).data().url(), b"https://management.example".to_string());
     assert_eq!(pro::publisher_page(b"https://publisher.example".to_string()).data().url(), b"https://publisher.example".to_string());

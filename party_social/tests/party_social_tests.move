@@ -28,7 +28,7 @@ fun constructors_wrap_handles() {
     let events_before = event::num_events();
     assert_eq!(social::x(b"miso".to_string()).data().handle(), b"miso".to_string());
     assert_eq!(event::num_events(), events_before);
-    assert_eq!(social::instagram(b"miso.network".to_string()).data().handle(), b"miso.network".to_string());
+    assert_eq!(social::instagram(b"miso.fm".to_string()).data().handle(), b"miso.fm".to_string());
     assert_eq!(event::num_events(), events_before);
     assert_eq!(social::threads(b"miso".to_string()).data().handle(), b"miso".to_string());
     assert_eq!(event::num_events(), events_before);
